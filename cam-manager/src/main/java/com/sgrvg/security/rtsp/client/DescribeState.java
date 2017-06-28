@@ -10,7 +10,7 @@ public class DescribeState extends RtspHandshakeState {
 
 	public DescribeState(URI uri, DefaultHttpMessage message) {
 		super(uri, message);
-		// TODO Auto-generated constructor stub
+		
 	}
 
 	@Override

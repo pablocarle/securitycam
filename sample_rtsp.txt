@@ -1,0 +1,139 @@
+./openRTSP rtsp://192.168.10.103:554/12
+Created new TCP socket 3 for connection
+Connecting to 192.168.10.103, port 554 on socket 3...
+...remote connection opened
+Sending request: OPTIONS rtsp://192.168.10.103:554/12 RTSP/1.0
+CSeq: 2
+User-Agent: ./openRTSP (LIVE555 Streaming Media v2017.06.04)
+
+
+Received 120 new bytes of response data.
+Received a complete OPTIONS response:
+RTSP/1.0 200 OK
+Server: HiIpcam/V100R003 VodServer/1.0.0
+Cseq: 2
+Public: OPTIONS, DESCRIBE, SETUP, TEARDOWN, PLAY
+
+
+Sending request: DESCRIBE rtsp://192.168.10.103:554/12 RTSP/1.0
+CSeq: 3
+User-Agent: ./openRTSP (LIVE555 Streaming Media v2017.06.04)
+Accept: application/sdp
+
+
+Received 724 new bytes of response data.
+Received a complete DESCRIBE response:
+RTSP/1.0 200 OK
+Server: HiIpcam/V100R003 VodServer/1.0.0
+Cseq: 3
+Content-Type: application/sdp
+Content-length: 520
+Date: Mon, 23 May 2012 06:51:26 GMT
+Content-Base: rtsp://192.168.10.103:554/12/
+
+v=0
+o=StreamingServer 3331435948 1116907222000 IN IP4 192.168.10.103
+s=\12
+c=IN IP4 0.0.0.0
+b=AS:4100
+t=0 0
+a=control:*
+m=video 0 RTP/AVP 96
+b=AS:4000
+a=framerate:25
+a=control:trackID=0
+a=rtpmap:96 H264/90000
+a=fmtp:96 packetization-mode=1;profile-level-id=420029; sprop-parameter-sets=Z2RAKawsqAoC/5U=,aO44gA==
+a=Media_header:MEDIAINFO=494D4B48010100000400010000000000000000000000000000000000000000000000000000000000
+a=framesize:96 640-360
+m=audio 0 RTP/AVP 8
+a=control:trackID=1
+a=rtpmap:8 PCMA/8000
+
+Opened URL "rtsp://192.168.10.103:554/12", returning a SDP description:
+v=0
+o=StreamingServer 3331435948 1116907222000 IN IP4 192.168.10.103
+s=\12
+c=IN IP4 0.0.0.0
+b=AS:4100
+t=0 0
+a=control:*
+m=video 0 RTP/AVP 96
+b=AS:4000
+a=framerate:25
+a=control:trackID=0
+a=rtpmap:96 H264/90000
+a=fmtp:96 packetization-mode=1;profile-level-id=420029; sprop-parameter-sets=Z2RAKawsqAoC/5U=,aO44gA==
+a=Media_header:MEDIAINFO=494D4B48010100000400010000000000000000000000000000000000000000000000000000000000
+a=framesize:96 640-360
+m=audio 0 RTP/AVP 8
+a=control:trackID=1
+a=rtpmap:8 PCMA/8000
+
+Created receiver for "video/H264" subsession (client ports 35668-35669)
+Created receiver for "audio/PCMA" subsession (client ports 37964-37965)
+
+Sending request: SETUP rtsp://192.168.10.103:554/12/trackID=0 RTSP/1.0
+CSeq: 4
+User-Agent: ./openRTSP (LIVE555 Streaming Media v2017.06.04)
+Transport: RTP/AVP;unicast;client_port=35668-35669
+
+
+Received 245 new bytes of response data.
+Received a complete SETUP response:
+RTSP/1.0 200 OK
+Server: HiIpcam/V100R003 VodServer/1.0.0
+Cseq: 4
+Session: 447631759621785; timeout=60
+Date: Mon, 23 May 2012 06:51:26 GMT
+Transport: RTP/AVP;unicast;client_port=35668-35669;server_port=5000-5001;ssrc=0cc1016f;mode="PLAY"
+
+
+Setup "video/H264" subsession (client ports 35668-35669)
+Sending request: SETUP rtsp://192.168.10.103:554/12/trackID=1 RTSP/1.0
+CSeq: 5
+User-Agent: ./openRTSP (LIVE555 Streaming Media v2017.06.04)
+Transport: RTP/AVP;unicast;client_port=37964-37965
+Session: 447631759621785
+
+
+Received 245 new bytes of response data.
+Received a complete SETUP response:
+RTSP/1.0 200 OK
+Server: HiIpcam/V100R003 VodServer/1.0.0
+Cseq: 5
+Session: 447631759621785; timeout=60
+Date: Mon, 23 May 2012 06:51:26 GMT
+Transport: RTP/AVP;unicast;client_port=37964-37965;server_port=5002-5003;ssrc=0cc1016f;mode="PLAY"
+
+
+Setup "audio/PCMA" subsession (client ports 37964-37965)
+Created output file: "video-H264-1"
+Created output file: "audio-PCMA-2"
+
+Sending request: PLAY rtsp://192.168.10.103:554/12/ RTSP/1.0
+CSeq: 6
+User-Agent: ./openRTSP (LIVE555 Streaming Media v2017.06.04)
+Session: 447631759621785
+Range: npt=0.000-
+
+
+Received 292 new bytes of response data.
+Received a complete PLAY response:
+RTSP/1.0 200 OK
+Server: HiIpcam/V100R003 VodServer/1.0.0
+Cseq: 6
+Session: 447631759621785
+Range: npt=0-
+RTP-Info: url=rtsp://192.168.10.103:554/12/trackID=0;seq=0;rtptime=260483130,url=rtsp://192.168.10.103:554/12/trackID=1;seq=0;rtptime=23154056
+Date: Mon, 23 May 2012 06:51:26 GMT
+
+
+Started playing session
+Receiving streamed data (signal with "kill -HUP 27460" or "kill -USR1 27460" to terminate)...
+^@Got shutdown signal
+Sending request: TEARDOWN rtsp://192.168.10.103:554/12/ RTSP/1.0
+CSeq: 7
+User-Agent: ./openRTSP (LIVE555 Streaming Media v2017.06.04)
+Session: 447631759621785
+
