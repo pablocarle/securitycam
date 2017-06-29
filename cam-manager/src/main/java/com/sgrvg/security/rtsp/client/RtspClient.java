@@ -3,14 +3,12 @@ package com.sgrvg.security.rtsp.client;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -29,8 +27,6 @@ import io.netty.handler.codec.rtsp.RtspEncoder;
  */
 public class RtspClient implements RtspClientInitializer {
 
-	private static Logger log = LoggerFactory.getLogger(RtspClient.class);
-	
 	private RtspClientTask task = null;
 	
 	@Override
@@ -40,7 +36,8 @@ public class RtspClient implements RtspClientInitializer {
 			Thread thread = new Thread(task);
 			thread.start();
 		} catch (URISyntaxException e1) {
-			log.error("Failed to create rtsp client task", e1);
+			System.err.println("Failed to create rtsp client task");
+			e1.printStackTrace();
 		}
 		return null;
 	}
@@ -69,18 +66,30 @@ public class RtspClient implements RtspClientInitializer {
 					@Override
 					protected void initChannel(Channel ch) throws Exception {
 						System.out.println("init channel");
-						ch.pipeline().addLast(new RtspEncoder());
-						ch.pipeline().addLast(new RtspDecoder());
-						ch.pipeline().addLast(operation);
+						ch.pipeline().addLast("encoder", new RtspEncoder());
+						ch.pipeline().addLast("decoder", new RtspDecoder());
+						ch.pipeline().addLast("handler", operation);
 					}
 				});
 				
 				ChannelFuture future = bootstrap.connect(uri.getHost(), uri.getPort()).sync();
+				future.channel().closeFuture().addListener(new ChannelFutureListener() {
+					
+					@Override
+					public void operationComplete(ChannelFuture future) throws Exception {
+						System.out.println("Operation Complete: Channel closed");
+						if (!future.isSuccess()) {
+							future.cause().printStackTrace();
+						}
+					}
+				});
 				// Aca estoy conectado, comienzo chain
-				operation.start(future.channel());
+				operation.start(RtspClient.this, future.channel());
 				future.channel().closeFuture().sync();
+				System.out.println("Channel closed");
 			} catch (Exception e) {
-				log.error("Failed to stablish a connection with rtsp server " + uri, e);
+				System.err.println("Failed to stablish a connection with rtsp server " + uri);
+				e.printStackTrace();
 			}
 		}
 	}

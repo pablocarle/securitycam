@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.netty.handler.codec.http.DefaultHttpMessage;
+import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.util.AsciiString;
 
@@ -18,7 +18,7 @@ public class SetupState extends RtspHandshakeState {
 	private String date;
 	private String transport;
 	
-	protected SetupState(URI uri, DefaultHttpMessage message) {
+	protected SetupState(URI uri, HttpResponse message) {
 		super(uri, message);
 		this.server = message.headers().get(RtspHeaderNames.SERVER);
 		this.sessionHeader = message.headers().get(RtspHeaderNames.SESSION);

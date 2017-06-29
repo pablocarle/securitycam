@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.netty.handler.codec.http.DefaultHttpMessage;
+import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.util.AsciiString;
 
@@ -24,7 +24,7 @@ public class DescribeState extends RtspHandshakeState {
 	private String contentBase;
 	
 	
-	public DescribeState(URI uri, DefaultHttpMessage message) {
+	public DescribeState(URI uri, HttpResponse message) {
 		super(uri, message);
 		server = message.headers().get(RtspHeaderNames.SERVER);
 		contentType = message.headers().get(RtspHeaderNames.CONTENT_TYPE);

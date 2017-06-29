@@ -32,11 +32,9 @@ public class SetupCommand extends RtspHandshake {
 	public ChannelFuture call() throws Exception {
 		HttpRequest request = new DefaultHttpRequest(RtspVersions.RTSP_1_0, RtspMethods.SETUP, handshakeState.getUri().toASCIIString());
 		request.headers().set(RtspHeaderNames.CSEQ, String.valueOf(handshakeState.getSequence()));
-		request.headers().set(RtspHeaderNames.USER_AGENT, handshakeState.getUserAgent());
+		request.headers().set(RtspHeaderNames.USER_AGENT, RtspHandshakeState.USER_AGENT);
 		request.headers().set(RtspHeaderNames.TRANSPORT, "RTP/AVP;unicast;client_port=" + lowPort + "-" + highPort);
-		ChannelFuture future = channel.write(request);
-		channel.flush();
-		return future;
+		return channel.writeAndFlush(request);
 	}
 
 	@Override

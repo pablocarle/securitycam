@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.netty.handler.codec.http.DefaultHttpMessage;
+import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.util.AsciiString;
 
@@ -17,7 +17,7 @@ public class PlayState extends RtspHandshakeState {
 	private String date;
 	private String rtpInfo;
 	
-	protected PlayState(URI uri, DefaultHttpMessage message) {
+	protected PlayState(URI uri, HttpResponse message) {
 		super(uri, message);
 		this.server = message.headers().get(RtspHeaderNames.SERVER);
 		this.session = message.headers().get(RtspHeaderNames.SESSION);

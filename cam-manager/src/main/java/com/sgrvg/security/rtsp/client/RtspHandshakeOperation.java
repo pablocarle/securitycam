@@ -10,7 +10,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.HttpMessage;
+import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 public class RtspHandshakeOperation extends ChannelInboundHandlerAdapter {
@@ -29,25 +30,25 @@ public class RtspHandshakeOperation extends ChannelInboundHandlerAdapter {
 	private int sequence = 1;
 	private RtspHandshake lastCommand = null;
 	private URI uri;
+	private HttpMessage lastMessage;
+	private RtspClient rtspClient;
 	
 	public RtspHandshakeOperation(URI uri) {
 		super();
 		this.uri = uri;
 	}
 	
-	public void start(Channel channel) throws Exception {
-		lastCommand = new OptionsCommand(channel, new OptionsState(uri, USER_AGENT, sequence++));
+	public void start(RtspClient rtspClient, Channel channel) throws Exception {
+		this.lastCommand = new OptionsCommand(channel, new OptionsState(uri, sequence));
+		this.rtspClient = rtspClient;
 		ChannelFuture future = lastCommand.call();
-		future.addListener(new ChannelFutureListener() {
-			//TODO Reemplazar estos 2 listeners por un utilitario de logging
-			@Override
-			public void operationComplete(ChannelFuture future) throws Exception {
-				System.out.println("OPTIONS operation ended with " + future.isSuccess() + " status");
-				if (!future.isSuccess()) {
-					System.err.println(future.cause());
-				}
+		future.addListener(fut -> {
+			System.out.println(lastCommand.getRtspMethod().name() + " operation ended with " + fut.isSuccess() + " status");
+			if (!fut.isSuccess()) {
+				fut.cause().printStackTrace();
 			}
 		});
+		future.await();
 	}
 
 	@Override
@@ -58,23 +59,39 @@ public class RtspHandshakeOperation extends ChannelInboundHandlerAdapter {
 	
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-		System.out.println("channel read");
-		DefaultFullHttpResponse response = (DefaultFullHttpResponse) msg;
-		if (response.status().equals(HttpResponseStatus.OK)) {
-			responseOk(ctx.channel(), response);
-		} else {
-			throw new RtspHandshakeException("Couldn't connect to server"); //TODO Mensajes
+		System.out.println("channel read. message type is: " + (msg != null ? msg.getClass().getName() : "null"));
+		if (msg instanceof HttpResponse) {
+			HttpResponse response = (HttpResponse) msg;
+			if (response.status().equals(HttpResponseStatus.OK)) {
+				lastMessage = (HttpMessage) msg;
+				responseOk(ctx, response);
+			} else {
+				throw new RtspHandshakeException("Couldn't connect to server"); //TODO Mensajes
+			}
 		}
+	}
+	
+	@Override
+	public void channelActive(ChannelHandlerContext ctx) throws Exception {
+		System.out.println("Channel Active");
+		// TODO Auto-generated method stub
+		super.channelActive(ctx);
+	}
+	
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		cause.printStackTrace();
+		ctx.close();
 	}
 	
 	/**
 	 * Continue processing the handshake
 	 * 
-	 * @param channel The channel that handles the socket
+	 * @param ctx The channel that handles the socket
 	 * @param response The response obtained from the last operation
 	 * @throws Exception 
 	 */
-	private void responseOk(Channel channel, DefaultFullHttpResponse response) throws Exception {
+	private void responseOk(ChannelHandlerContext ctx, HttpResponse response) throws Exception {
 		if (lastCommand == null) {
 			throw new RtspHandshakeException("Invalid status for receiving a response ok status notification");
 		}
@@ -82,20 +99,20 @@ public class RtspHandshakeOperation extends ChannelInboundHandlerAdapter {
 		Optional<RtspHandshake> next = null;
 		switch (lastCommand.getRtspMethod().asciiName().toString().toUpperCase()) {
 			case OPTIONS: {
-				next = Optional.of(new DescribeCommand(channel, new OptionsState(uri, response)));
+				next = Optional.of(new DescribeCommand(ctx, new OptionsState(uri, response)));
 				break;
 			}
 			case DESCRIBE: {
-				next = Optional.of(prepareSetup(channel, response));
+				next = Optional.of(prepareSetup(ctx.channel(), response));
 				break;
 			}
 			case SETUP: {
-				next = Optional.of(new PlayCommand(channel, new SetupState(uri, response)));
+				next = Optional.of(new PlayCommand(ctx.channel(), new SetupState(uri, response)));
 				break;
 			}
 			case PLAY: {
 				//next = Optional.empty();
-				next = Optional.of(new TeardownCommand(channel, new PlayState(uri, response)));
+				next = Optional.of(new TeardownCommand(ctx.channel(), new PlayState(uri, response)));
 				break;
 			}
 			case TEARDOWN: {
@@ -115,15 +132,23 @@ public class RtspHandshakeOperation extends ChannelInboundHandlerAdapter {
 				public void operationComplete(ChannelFuture future) throws Exception {
 					System.out.println(nextCommand.getRtspMethod().name() + " operation ended with " + future.isSuccess() + " status");
 					if (!future.isSuccess()) {
-						System.err.println(future.cause());
+						future.cause().printStackTrace();
 					}
 					lastCommand = nextCommand;
 				}
 			});
+			future.await();
 		}
 	}
 
-	private RtspHandshake prepareSetup(Channel channel, DefaultFullHttpResponse response) {
+	/**
+	 * TODO Debe levantar el server RTP
+	 * 
+	 * @param channel
+	 * @param response
+	 * @return
+	 */
+	private RtspHandshake prepareSetup(Channel channel, HttpResponse response) {
 		RTPListener listener = new RTPListener();
 		//TODO Levantar el RTP
 		return new SetupCommand(channel, new DescribeState(uri, response), listener);

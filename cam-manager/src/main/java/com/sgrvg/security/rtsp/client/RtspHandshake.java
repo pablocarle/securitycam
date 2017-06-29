@@ -22,4 +22,8 @@ public abstract class RtspHandshake implements Callable<ChannelFuture> {
 	public RtspHandshakeState getState() {
 		return handshakeState;
 	}
+	
+	protected Channel getChannel() {
+		return channel;
+	}
 }
