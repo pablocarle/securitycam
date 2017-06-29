@@ -11,6 +11,8 @@ import io.netty.util.internal.StringUtil;
 
 public abstract class RtspHandshakeState {
 
+	public static final String USER_AGENT = RtspHandshakeOperation.USER_AGENT;
+	
 	private int sequence;
 	private String userAgent;
 	private URI uri;

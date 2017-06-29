@@ -3,6 +3,8 @@ package com.sgrvg.security.rtsp.client;
 import java.net.URI;
 import java.util.Optional;
 
+import com.sgrvg.security.rtp.server.RTPListener;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -65,6 +67,13 @@ public class RtspHandshakeOperation extends ChannelInboundHandlerAdapter {
 		}
 	}
 	
+	/**
+	 * Continue processing the handshake
+	 * 
+	 * @param channel The channel that handles the socket
+	 * @param response The response obtained from the last operation
+	 * @throws Exception 
+	 */
 	private void responseOk(Channel channel, DefaultFullHttpResponse response) throws Exception {
 		if (lastCommand == null) {
 			throw new RtspHandshakeException("Invalid status for receiving a response ok status notification");
@@ -77,7 +86,7 @@ public class RtspHandshakeOperation extends ChannelInboundHandlerAdapter {
 				break;
 			}
 			case DESCRIBE: {
-				next = Optional.of(new SetupCommand(channel, new DescribeState(uri, response)));
+				next = Optional.of(prepareSetup(channel, response));
 				break;
 			}
 			case SETUP: {
@@ -85,7 +94,8 @@ public class RtspHandshakeOperation extends ChannelInboundHandlerAdapter {
 				break;
 			}
 			case PLAY: {
-				next = Optional.empty();
+				//next = Optional.empty();
+				next = Optional.of(new TeardownCommand(channel, new PlayState(uri, response)));
 				break;
 			}
 			case TEARDOWN: {
@@ -111,6 +121,12 @@ public class RtspHandshakeOperation extends ChannelInboundHandlerAdapter {
 				}
 			});
 		}
+	}
+
+	private RtspHandshake prepareSetup(Channel channel, DefaultFullHttpResponse response) {
+		RTPListener listener = new RTPListener();
+		//TODO Levantar el RTP
+		return new SetupCommand(channel, new DescribeState(uri, response), listener);
 	}
 
 	public Integer currentSequence() {
