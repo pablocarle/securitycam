@@ -3,9 +3,12 @@ package com.sgrvg.security.rtsp.client;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import com.sgrvg.security.rtp.server.RTPServerHandle;
+import com.sgrvg.security.rtp.server.RTPServerInitializer;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -25,15 +28,17 @@ import io.netty.handler.codec.rtsp.RtspEncoder;
  * @author pabloc
  *
  */
-public class RtspClient implements RtspClientInitializer {
+public class RtspClient implements RtspClientInitializer, RTPServerInitializer {
 
-	private RtspClientTask task = null;
+	private RtspClientTask rtspTask = null;
+	private RTPServerTask rtpTask = null;
+	private EventLoopGroup workerGroup = new NioEventLoopGroup();;
 	
 	@Override
 	public RtspClientHandle initialize(RtspServerDefinition serverDefinition) {
 		try {
-			task = new RtspClientTask(serverDefinition.getURI());
-			Thread thread = new Thread(task);
+			rtspTask = new RtspClientTask(serverDefinition.getURI());
+			Thread thread = new Thread(rtspTask);
 			thread.start();
 		} catch (URISyntaxException e1) {
 			System.err.println("Failed to create rtsp client task");
@@ -42,12 +47,17 @@ public class RtspClient implements RtspClientInitializer {
 		return null;
 	}
 
+	/**
+	 * Tarea implementacion actual de cada cliente RTSP
+	 * 
+	 * @author pabloc
+	 *
+	 */
 	private class RtspClientTask implements Runnable { 
 		
 		private URI uri;
 		private RtspHandshakeOperation operation;
 		private Bootstrap bootstrap = new Bootstrap();
-		private EventLoopGroup workerGroup = new NioEventLoopGroup();;
 
 		public RtspClientTask(URI uri) {
 			super();
@@ -93,9 +103,33 @@ public class RtspClient implements RtspClientInitializer {
 
 	@Override
 	public Integer currentSequence() {
-		if (task != null) {
-			return task.operation.currentSequence();
+		if (rtspTask != null) {
+			return rtspTask.operation.currentSequence();
 		}
 		return 1;
+	}
+
+	@Override
+	public RTPServerHandle initialize() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	/**
+	 * Tarea principal de cada servidor RTP
+	 * 
+	 * @author pabloc
+	 *
+	 */
+	private class RTPServerTask implements Runnable {
+
+		private ServerBootstrap bootstrap = new ServerBootstrap();
+		
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			
+		}
+		
 	}
 }

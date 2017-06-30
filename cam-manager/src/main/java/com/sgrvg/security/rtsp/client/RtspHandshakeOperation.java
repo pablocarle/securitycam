@@ -54,6 +54,10 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 		});
 		future.sync();
 	}
+	
+	public void shutdown() throws Exception {
+		// TODO Teardown + shutdown gracefully
+	}
 
 	@Override
 	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
@@ -161,6 +165,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	 * @return
 	 */
 	private RtspHandshake prepareSetup(Channel channel, HttpResponse response) {
+		
 		RTPListener listener = new RTPListener();
 		//TODO Levantar el RTP
 		return new SetupCommand(channel, new DescribeState(uri, lastCommand.getState().getSequence() + 1, response), listener);
@@ -172,7 +177,6 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception {
-		System.out.println("channel read. message type is: " + (msg != null ? msg.getClass().getName() : "null"));
 		if (msg instanceof HttpResponse) {
 			HttpResponse response = (HttpResponse) msg;
 			if (response.status().equals(HttpResponseStatus.OK)) {
