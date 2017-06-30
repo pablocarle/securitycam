@@ -18,8 +18,8 @@ public class SetupState extends RtspHandshakeState {
 	private String date;
 	private String transport;
 	
-	protected SetupState(URI uri, HttpResponse message) {
-		super(uri, message);
+	protected SetupState(URI uri, int sequence, HttpResponse message) {
+		super(uri, sequence, message);
 		this.server = message.headers().get(RtspHeaderNames.SERVER);
 		this.sessionHeader = message.headers().get(RtspHeaderNames.SESSION);
 		this.date = message.headers().get(RtspHeaderNames.DATE);
@@ -34,7 +34,7 @@ public class SetupState extends RtspHandshakeState {
 				sessionNumber = tokens[0];
 			}
 			if (tokens.length > 1) {
-				timeout = Long.parseLong(tokens[1].replaceFirst("timeout=", ""));
+				timeout = Long.parseLong(tokens[1].replaceFirst("timeout=", "").trim());
 			}
 		}
 	}

@@ -24,8 +24,8 @@ public class DescribeState extends RtspHandshakeState {
 	private String contentBase;
 	
 	
-	public DescribeState(URI uri, HttpResponse message) {
-		super(uri, message);
+	public DescribeState(URI uri, int sequence, HttpResponse message) {
+		super(uri, sequence, message);
 		server = message.headers().get(RtspHeaderNames.SERVER);
 		contentType = message.headers().get(RtspHeaderNames.CONTENT_TYPE);
 		contentLength = message.headers().getInt(RtspHeaderNames.CONTENT_LENGTH);

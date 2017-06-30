@@ -17,8 +17,8 @@ public class PlayState extends RtspHandshakeState {
 	private String date;
 	private String rtpInfo;
 	
-	protected PlayState(URI uri, HttpResponse message) {
-		super(uri, message);
+	protected PlayState(URI uri, int sequence, HttpResponse message) {
+		super(uri, sequence, message);
 		this.server = message.headers().get(RtspHeaderNames.SERVER);
 		this.session = message.headers().get(RtspHeaderNames.SESSION);
 		this.range = message.headers().get(RtspHeaderNames.RANGE);

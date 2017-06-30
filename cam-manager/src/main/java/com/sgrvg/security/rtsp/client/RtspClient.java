@@ -8,12 +8,12 @@ import com.sgrvg.security.rtsp.RtspServerDefinition;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.rtsp.RtspDecoder;
 import io.netty.handler.codec.rtsp.RtspEncoder;
 
@@ -65,22 +65,19 @@ public class RtspClient implements RtspClientInitializer {
 
 					@Override
 					protected void initChannel(Channel ch) throws Exception {
-						System.out.println("init channel");
-						ch.pipeline().addLast("encoder", new RtspEncoder());
+						System.out.println("Channel Init");
 						ch.pipeline().addLast("decoder", new RtspDecoder());
+						ch.pipeline().addLast("encoder", new RtspEncoder());
+						ch.pipeline().addLast(new HttpObjectAggregator(65536));
 						ch.pipeline().addLast("handler", operation);
 					}
 				});
 				
 				ChannelFuture future = bootstrap.connect(uri.getHost(), uri.getPort()).sync();
-				future.channel().closeFuture().addListener(new ChannelFutureListener() {
-					
-					@Override
-					public void operationComplete(ChannelFuture future) throws Exception {
-						System.out.println("Operation Complete: Channel closed");
-						if (!future.isSuccess()) {
-							future.cause().printStackTrace();
-						}
+				future.channel().closeFuture().addListener(closeFuture -> {
+					System.out.println("Operation Complete: Channel closed");
+					if (!closeFuture.isSuccess()) {
+						closeFuture.cause().printStackTrace();
 					}
 				});
 				// Aca estoy conectado, comienzo chain

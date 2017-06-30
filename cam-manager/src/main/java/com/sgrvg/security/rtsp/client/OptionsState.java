@@ -16,8 +16,8 @@ public class OptionsState extends RtspHandshakeState {
 		super(uri, sequence);
 	}
 
-	public OptionsState(URI uri, HttpResponse message) {
-		super(uri, message);
+	public OptionsState(URI uri, int sequence, HttpResponse message) {
+		super(uri, sequence, message);
 		this.options = message.headers().get(RtspHeaderNames.PUBLIC);
 	}
 

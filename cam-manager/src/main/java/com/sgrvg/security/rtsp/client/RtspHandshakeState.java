@@ -13,8 +13,8 @@ public abstract class RtspHandshakeState {
 
 	public static final String USER_AGENT = RtspHandshakeOperation.USER_AGENT;
 	
-	private int sequence;
-	private URI uri;
+	protected int sequence;
+	protected URI uri;
 
 	protected RtspHandshakeState(URI uri, int sequence) {
 		super();
@@ -22,11 +22,13 @@ public abstract class RtspHandshakeState {
 		this.uri = uri;
 	}
 	
-	protected RtspHandshakeState(URI uri, HttpResponse message) {
+	protected RtspHandshakeState(URI uri, int sequence, HttpResponse message) {
 		super();
 		String sequenceHeader = message.headers().get(RtspHeaderNames.CSEQ);
 		if (!StringUtil.isNullOrEmpty(sequenceHeader)) {
-			sequence = Integer.parseInt(sequenceHeader);
+			this.sequence = Integer.parseInt(sequenceHeader);
+		} else {
+			this.sequence = sequence;
 		}
 		this.uri = uri;
 	}
