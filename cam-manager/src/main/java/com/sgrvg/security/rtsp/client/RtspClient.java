@@ -17,6 +17,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.rtsp.RtspDecoder;
@@ -55,7 +56,7 @@ public class RtspClient implements RtspClientInitializer, RTPServerInitializer {
 			System.err.println("Failed to create rtsp client task");
 			e1.printStackTrace();
 		}
-		return null;
+		return new RtspClientHandleImpl(rtspTask);
 	}
 
 	/**
@@ -64,7 +65,7 @@ public class RtspClient implements RtspClientInitializer, RTPServerInitializer {
 	 * @author pabloc
 	 *
 	 */
-	private class RtspClientTask implements Runnable { 
+	class RtspClientTask implements Runnable { 
 		
 		private RtspHandshakeOperation operation;
 		private Bootstrap bootstrap = new Bootstrap();
@@ -84,7 +85,7 @@ public class RtspClient implements RtspClientInitializer, RTPServerInitializer {
 
 					@Override
 					protected void initChannel(Channel ch) throws Exception {
-						System.out.println("Channel Init");
+						logger.info("RTSP Client Channel Init");
 						ch.pipeline().addLast("decoder", new RtspDecoder());
 						ch.pipeline().addLast("encoder", new RtspEncoder());
 						ch.pipeline().addLast(new HttpObjectAggregator(65536));
@@ -94,7 +95,7 @@ public class RtspClient implements RtspClientInitializer, RTPServerInitializer {
 				
 				ChannelFuture future = bootstrap.connect(uri.getHost(), uri.getPort()).sync();
 				future.channel().closeFuture().addListener(closeFuture -> {
-					System.out.println("Operation Complete: Channel closed");
+					logger.info("Operation Complete: Channel closed");
 					if (!closeFuture.isSuccess()) {
 						closeFuture.cause().printStackTrace();
 					}
@@ -102,10 +103,9 @@ public class RtspClient implements RtspClientInitializer, RTPServerInitializer {
 				// Aca estoy conectado, comienzo chain
 				operation.start(RtspClient.this, future.channel());
 				future.channel().closeFuture().sync();
-				System.out.println("Channel closed");
+				logger.info("Channel closed");
 			} catch (Exception e) {
-				System.err.println("Failed to stablish a connection with rtsp server " + uri);
-				e.printStackTrace();
+				logger.error("Failed to stablish a connection with rtsp server {}", e, uri);
 			}
 		}
 	}
@@ -130,15 +130,22 @@ public class RtspClient implements RtspClientInitializer, RTPServerInitializer {
 	 * @author pabloc
 	 *
 	 */
-	private class RTPServerTask implements Runnable {
+	class RTPServerTask implements Runnable {
 
 		private ServerBootstrap bootstrap = new ServerBootstrap();
 		
 		@Override
 		public void run() {
-			// TODO Auto-generated method stub
-			
+			bootstrap.group(workerGroup);
+			bootstrap.channel(NioServerSocketChannel.class);
+			bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
+			bootstrap.handler(new ChannelInitializer<Channel>() {
+
+				@Override
+				protected void initChannel(Channel ch) throws Exception {
+					logger.info("RTP Server Channel Init");
+				}
+			});
 		}
-		
 	}
 }

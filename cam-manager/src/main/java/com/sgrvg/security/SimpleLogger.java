@@ -1,5 +1,11 @@
 package com.sgrvg.security;
 
+/**
+ * Simple logger interface, what else?
+ * 
+ * @author pabloc
+ *
+ */
 public interface SimpleLogger {
 	
 	public void error(String arg0, Object...args);

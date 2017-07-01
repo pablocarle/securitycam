@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import com.google.inject.Inject;
 import com.sgrvg.security.SimpleLogger;
+import com.sgrvg.security.rtp.server.RTPServerDefinition;
 import com.sgrvg.security.rtp.server.RTPServerHandle;
 import com.sgrvg.security.rtp.server.RTPServerInitializer;
 
@@ -14,7 +15,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpMessage;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -37,7 +37,6 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	private int sequence = 1;
 	private volatile RtspHandshake lastCommand = null;
 	private URI uri;
-	private volatile HttpMessage lastMessage;
 	private RtspClient rtspClient;
 	private SimpleLogger logger;
 
@@ -53,7 +52,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 		this.rtspClient = rtspClient;
 		ChannelFuture future = lastCommand.call();
 		future.addListener(fut -> {
-			System.out.println(lastCommand.getRtspMethod().name() + " operation ended with " + fut.isSuccess() + " status");
+			logger.info("{} operation ended with {} status", lastCommand.getRtspMethod().name(), fut.isSuccess());
 			if (!fut.isSuccess()) {
 				fut.cause().printStackTrace();
 			}
@@ -67,20 +66,19 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 
 	@Override
 	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-		System.out.println("channel read complete");
+		logger.info("Channel Read Complete");
 		super.channelReadComplete(ctx);
 	}
 
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
-		System.out.println("Channel Active");
+		logger.info("Channel Active");
 		super.channelActive(ctx);
 	}
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-		System.out.println("EXCEPTION CAUGHT");
-		cause.printStackTrace();
+		logger.warn("EXCEPTION CAUGHT", cause);
 		ctx.close();
 	}
 
@@ -152,7 +150,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 
 				@Override
 				public void operationComplete(ChannelFuture future) throws Exception {
-					System.out.println(nextCommand.getRtspMethod().name() + " operation ended with " + future.isSuccess() + " status");
+					logger.info("{} operation ended with {} status", nextCommand.getRtspMethod().name(), future.isSuccess());
 					if (!future.isSuccess()) {
 						future.cause().printStackTrace();
 					}
@@ -164,7 +162,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	}
 
 	/**
-	 * TODO Debe levantar el server RTP
+	 * Solicita inicializacion de servidor RTP
 	 * 
 	 * @param channel
 	 * @param response
@@ -173,9 +171,19 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	 */
 	private RtspHandshake prepareSetup(Channel channel, HttpResponse response) throws RtspHandshakeException {
 		if (rtspClient instanceof RTPServerInitializer) {
-			RTPServerHandle rtpServer = rtspClient.initialize();
-			//TODO Obtener la definicion
-			return new SetupCommand(channel, new DescribeState(uri, lastCommand.getState().getSequence() + 1, response), null); //FIXME null
+			try {
+				RTPServerHandle rtpServer = rtspClient.initialize();
+				RTPServerDefinition definition = rtpServer.serverDefinition();
+				return new SetupCommand(channel, new DescribeState(uri, lastCommand.getState().getSequence() + 1, response), definition.getPort());
+			} catch (Exception e) {
+				throw new RtspHandshakeException("Failed to send setup command", e);
+			} finally {
+				try {
+					shutdown();
+				} catch (Exception e) {
+					logger.error("Failed to shutdown gracefully", e);
+				}
+			}
 		} else {
 			throw new RtspHandshakeException("Expected RTPIinitializer but was not found");
 		}
@@ -190,8 +198,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 		if (msg instanceof HttpResponse) {
 			HttpResponse response = (HttpResponse) msg;
 			if (response.status().equals(HttpResponseStatus.OK)) {
-				System.out.println(lastCommand.getRtspMethod().name() + " received 200 OK");
-				lastMessage = (HttpMessage) msg;
+				logger.info("{} received 200 OK", lastCommand.getRtspMethod().name());
 				responseOk(ctx, response);
 			} else {
 				throw new RtspHandshakeException("Couldn't connect to server. Returned with status " + response.status());
