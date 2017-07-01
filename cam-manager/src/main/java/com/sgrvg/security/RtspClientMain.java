@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.sgrvg.security.guice.ApplicationModule;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 import com.sgrvg.security.rtsp.client.RtspClient;
 import com.sgrvg.security.rtsp.client.RtspClientHandle;
@@ -38,7 +41,10 @@ public class RtspClientMain {
 	 */
 	public static void main(String[] args) {
 		System.out.println("Starting RTSP Client");
-		RtspClientInitializer initializer = new RtspClient();
+		
+		Injector injector = Guice.createInjector(new ApplicationModule());
+		
+		RtspClientInitializer initializer = injector.getInstance(RtspClient.class);
 		List<RtspClientHandle> handles = new ArrayList<>();
 		servers.stream().forEach(server -> {
 			handles.add(initializer.initialize(server));

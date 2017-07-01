@@ -3,8 +3,8 @@ package com.sgrvg.security.rtsp.client;
 import java.net.URI;
 import java.util.Optional;
 
-import com.sgrvg.security.rtp.server.RTPListener;
-import com.sgrvg.security.rtp.server.RTPServerDefinition;
+import com.google.inject.Inject;
+import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.rtp.server.RTPServerHandle;
 import com.sgrvg.security.rtp.server.RTPServerInitializer;
 
@@ -39,10 +39,13 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	private URI uri;
 	private volatile HttpMessage lastMessage;
 	private RtspClient rtspClient;
+	private SimpleLogger logger;
 
-	public RtspHandshakeOperation(URI uri) {
+	@Inject
+	public RtspHandshakeOperation(
+			SimpleLogger logger) {
 		super();
-		this.uri = uri;
+		this.logger = logger;
 	}
 
 	public void start(RtspClient rtspClient, Channel channel) throws Exception {
@@ -172,7 +175,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 		if (rtspClient instanceof RTPServerInitializer) {
 			RTPServerHandle rtpServer = rtspClient.initialize();
 			//TODO Obtener la definicion
-			return new SetupCommand(channel, new DescribeState(uri, lastCommand.getState().getSequence() + 1, response), listener);
+			return new SetupCommand(channel, new DescribeState(uri, lastCommand.getState().getSequence() + 1, response), null); //FIXME null
 		} else {
 			throw new RtspHandshakeException("Expected RTPIinitializer but was not found");
 		}

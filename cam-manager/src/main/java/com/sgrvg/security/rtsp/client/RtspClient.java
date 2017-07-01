@@ -3,6 +3,8 @@ package com.sgrvg.security.rtsp.client;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import com.google.inject.Inject;
+import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.rtp.server.RTPServerHandle;
 import com.sgrvg.security.rtp.server.RTPServerInitializer;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
@@ -32,12 +34,21 @@ public class RtspClient implements RtspClientInitializer, RTPServerInitializer {
 
 	private RtspClientTask rtspTask = null;
 	private RTPServerTask rtpTask = null;
-	private EventLoopGroup workerGroup = new NioEventLoopGroup();;
+	private EventLoopGroup workerGroup = new NioEventLoopGroup();
+	private URI uri;
+	private SimpleLogger logger;
+	
+	@Inject
+	public RtspClient(SimpleLogger logger) {
+		super();
+		this.logger = logger;
+	}
 	
 	@Override
 	public RtspClientHandle initialize(RtspServerDefinition serverDefinition) {
 		try {
-			rtspTask = new RtspClientTask(serverDefinition.getURI());
+			this.uri = serverDefinition.getURI();
+			rtspTask = new RtspClientTask();
 			Thread thread = new Thread(rtspTask);
 			thread.start();
 		} catch (URISyntaxException e1) {
@@ -55,14 +66,12 @@ public class RtspClient implements RtspClientInitializer, RTPServerInitializer {
 	 */
 	private class RtspClientTask implements Runnable { 
 		
-		private URI uri;
 		private RtspHandshakeOperation operation;
 		private Bootstrap bootstrap = new Bootstrap();
 
-		public RtspClientTask(URI uri) {
+		public RtspClientTask() {
 			super();
-			this.uri = uri;
-			this.operation = new RtspHandshakeOperation(uri);
+			this.operation = null;//new RtspHandshakeOperation(uri);
 		}
 
 		@Override
