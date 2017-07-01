@@ -4,6 +4,9 @@ import java.net.URI;
 import java.util.Optional;
 
 import com.sgrvg.security.rtp.server.RTPListener;
+import com.sgrvg.security.rtp.server.RTPServerDefinition;
+import com.sgrvg.security.rtp.server.RTPServerHandle;
+import com.sgrvg.security.rtp.server.RTPServerInitializer;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -163,12 +166,16 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	 * @param channel
 	 * @param response
 	 * @return
+	 * @throws RtspHandshakeException 
 	 */
-	private RtspHandshake prepareSetup(Channel channel, HttpResponse response) {
-		
-		RTPListener listener = new RTPListener();
-		//TODO Levantar el RTP
-		return new SetupCommand(channel, new DescribeState(uri, lastCommand.getState().getSequence() + 1, response), listener);
+	private RtspHandshake prepareSetup(Channel channel, HttpResponse response) throws RtspHandshakeException {
+		if (rtspClient instanceof RTPServerInitializer) {
+			RTPServerHandle rtpServer = rtspClient.initialize();
+			//TODO Obtener la definicion
+			return new SetupCommand(channel, new DescribeState(uri, lastCommand.getState().getSequence() + 1, response), listener);
+		} else {
+			throw new RtspHandshakeException("Expected RTPIinitializer but was not found");
+		}
 	}
 
 	public Integer currentSequence() {
@@ -184,7 +191,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 				lastMessage = (HttpMessage) msg;
 				responseOk(ctx, response);
 			} else {
-				throw new RtspHandshakeException("Couldn't connect to server. Returned with status " + response.status() + " and reason " + response.status().reasonPhrase());
+				throw new RtspHandshakeException("Couldn't connect to server. Returned with status " + response.status());
 			}
 		}
 		if (msg instanceof HttpContent) {
