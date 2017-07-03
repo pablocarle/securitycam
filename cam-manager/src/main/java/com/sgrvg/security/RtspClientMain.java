@@ -10,15 +10,20 @@ import java.util.stream.Collectors;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.sgrvg.security.guice.ApplicationModule;
+import com.sgrvg.security.rtp.server.RTPServerHandle;
+import com.sgrvg.security.rtp.server.RTPServerInitializer;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
-import com.sgrvg.security.rtsp.client.RtspClient;
 import com.sgrvg.security.rtsp.client.RtspClientHandle;
 import com.sgrvg.security.rtsp.client.RtspClientInitializer;
 
 public class RtspClientMain {
 
+	private static SimpleLogger logger;
+	
 	private static List<RtspServerDefinition> servers;
-
+	private static List<RTPServerHandle> rtpServerInstances;
+	private static List<RtspClientHandle> rtspClientInstances;
+	
 	static {
 		Properties props = new Properties();
 		try {
@@ -40,17 +45,25 @@ public class RtspClientMain {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		System.out.println("Starting RTSP Client");
+		final Injector injector = Guice.createInjector(new ApplicationModule());
+
+		logger = injector.getInstance(SimpleLogger.class);
 		
-		Injector injector = Guice.createInjector(new ApplicationModule());
+		logger.info("Starting Services");
 		
-		RtspClientInitializer initializer = injector.getInstance(RtspClient.class);
-		List<RtspClientHandle> handles = new ArrayList<>();
+		rtpServerInstances = new ArrayList<>();
+		rtspClientInstances = new ArrayList<>();
+		
 		servers.stream().forEach(server -> {
-			handles.add(initializer.initialize(server));
+			RtspClientInitializer rtspClientInitializer = injector.getInstance(RtspClientInitializer.class);
+			RTPServerInitializer rtpServerInitializer = injector.getInstance(RTPServerInitializer.class);
+			
+			RTPServerHandle rtpServer = rtpServerInitializer.initialize();
+			rtpServerInstances.add(rtpServer);
+			rtspClientInstances.add(rtspClientInitializer.initialize(server, rtpServer));
 		});
 	}
-
+	
 	private static void loadServers(final Properties props) {
 		System.out.println("Load Servers");
 		servers = Arrays.stream(props.getProperty("server_names").split(","))

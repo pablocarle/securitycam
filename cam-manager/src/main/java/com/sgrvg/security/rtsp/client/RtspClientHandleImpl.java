@@ -16,4 +16,10 @@ public class RtspClientHandleImpl implements RtspClientHandle {
 
 	}
 
+	@Override
+	public RtspClientHandle addListener(Object object) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

@@ -23,13 +23,17 @@ public class RtpPacket {
 	private short extensionHeaderData;
 	private byte[] extensionData;
 	private ByteBuf data;
+
+	public static boolean isValidRTPPacket(ByteBuf buffer) {
+		return buffer.readableBytes() >= 12;
+	}
 	
 	public static RtpPacket decode(byte[] data) {
 		return decode(Unpooled.wrappedBuffer(data));
 	}
-
+	
 	public static RtpPacket decode(ByteBuf buffer) throws IndexOutOfBoundsException {
-		if (buffer.readableBytes() < 12) {
+		if (!isValidRTPPacket(buffer)) {
 			throw new IllegalArgumentException("A RTP packet must be at least 12 octets long");
 		}
 
@@ -81,6 +85,15 @@ public class RtpPacket {
 			buffer.skipBytes(buffer.readableBytes());
 		}
 		return packet;
+	}
+	
+	@Override
+	public String toString() {
+		//TODO Deshabilitar para despliegue
+		StringBuilder content = new StringBuilder();
+		content.append("{\n\tversion: ");
+		content.append(version);
+		return content.toString();
 	}
 
 	private void setData(byte[] data) {

@@ -6,8 +6,6 @@ import java.util.Optional;
 import com.google.inject.Inject;
 import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.rtp.server.RTPServerDefinition;
-import com.sgrvg.security.rtp.server.RTPServerHandle;
-import com.sgrvg.security.rtp.server.RTPServerInitializer;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -32,13 +30,13 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	public static final String SETUP = "SETUP";
 	public static final String TEARDOWN = "TEARDOWN";
 
-	public static final String USER_AGENT = "LibVLC/2.2.6 (LIVE555 Streaming Media v2017.04.26)";
+	public static final String USER_AGENT = "SGRVG CAM PROJECT";
 
 	private int sequence = 1;
-	private volatile RtspHandshake lastCommand = null;
+	private RtspHandshake lastCommand = null;
 	private URI uri;
-	private RtspClient rtspClient;
 	private SimpleLogger logger;
+	private RTPServerDefinition rtpServer;
 
 	@Inject
 	public RtspHandshakeOperation(
@@ -47,9 +45,9 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 		this.logger = logger;
 	}
 
-	public void start(RtspClient rtspClient, Channel channel) throws Exception {
+	public void start(RTPServerDefinition rtpServerDefinition, Channel channel) throws Exception {
 		this.lastCommand = new OptionsCommand(channel, new OptionsState(uri, sequence));
-		this.rtspClient = rtspClient;
+		this.rtpServer = rtpServerDefinition;
 		ChannelFuture future = lastCommand.call();
 		future.addListener(fut -> {
 			logger.info("{} operation ended with {} status", lastCommand.getRtspMethod().name(), fut.isSuccess());
@@ -170,23 +168,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	 * @throws RtspHandshakeException 
 	 */
 	private RtspHandshake prepareSetup(Channel channel, HttpResponse response) throws RtspHandshakeException {
-		if (rtspClient instanceof RTPServerInitializer) {
-			try {
-				RTPServerHandle rtpServer = rtspClient.initialize();
-				RTPServerDefinition definition = rtpServer.serverDefinition();
-				return new SetupCommand(channel, new DescribeState(uri, lastCommand.getState().getSequence() + 1, response), definition.getPort());
-			} catch (Exception e) {
-				throw new RtspHandshakeException("Failed to send setup command", e);
-			} finally {
-				try {
-					shutdown();
-				} catch (Exception e) {
-					logger.error("Failed to shutdown gracefully", e);
-				}
-			}
-		} else {
-			throw new RtspHandshakeException("Expected RTPIinitializer but was not found");
-		}
+		return new SetupCommand(channel, new DescribeState(uri, lastCommand.getState().getSequence() + 1, response), rtpServer.getPort());
 	}
 
 	public Integer currentSequence() {

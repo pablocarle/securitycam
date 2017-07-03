@@ -1,18 +1,29 @@
 package com.sgrvg.security.rtp.server;
 
+import com.sgrvg.security.rtp.server.RTPServer.RTPServerTask;
+
 public class RTPServerHandleImpl implements RTPServerHandle {
 
-	private RTPServerDefinition serverDefinition;
+	private RTPServerTask rtpTask;
 
-	RTPServerHandleImpl(RTPServerDefinition serverDefinition) {
+	public RTPServerHandleImpl(RTPServerTask rtpTask) {
 		super();
-		this.serverDefinition = serverDefinition;
+		this.rtpTask = rtpTask;
 	}
-	
+
 	@Override
 	public RTPServerDefinition serverDefinition() {
-		// TODO Auto-generated method stub
-		return null;
+		return new RTPServerDefinition(rtpTask.getAssignedPort());
 	}
 
+	@Override
+	public void waitConnected() throws InterruptedException {
+		if (rtpTask.isSuccessfulConnection()) {
+			return;
+		} else {
+			while (!rtpTask.isSuccessfulConnection()) {
+				Thread.sleep(1000);
+			}
+		}
+	}
 }

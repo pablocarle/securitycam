@@ -9,5 +9,7 @@ package com.sgrvg.security.rtsp.client;
 public interface RtspClientHandle {
 
 	void teardown();
-	
+
+	RtspClientHandle addListener(Object object);
+
 }

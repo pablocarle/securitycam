@@ -4,4 +4,6 @@ public interface RTPServerHandle {
 
 	RTPServerDefinition serverDefinition();
 	
+	void waitConnected() throws InterruptedException;
+	
 }

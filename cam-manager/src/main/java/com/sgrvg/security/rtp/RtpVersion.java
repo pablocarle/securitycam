@@ -22,7 +22,7 @@ public enum RtpVersion {
 		}
 		throw new IllegalArgumentException("Unknown version for byte: " + b);
 	}
-
+	
 	public byte getByte() {
 		return b;
 	}

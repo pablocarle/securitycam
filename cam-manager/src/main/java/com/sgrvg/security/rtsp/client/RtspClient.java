@@ -6,18 +6,14 @@ import java.net.URISyntaxException;
 import com.google.inject.Inject;
 import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.rtp.server.RTPServerHandle;
-import com.sgrvg.security.rtp.server.RTPServerInitializer;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.rtsp.RtspDecoder;
@@ -31,25 +27,25 @@ import io.netty.handler.codec.rtsp.RtspEncoder;
  * @author pabloc
  *
  */
-public class RtspClient implements RtspClientInitializer, RTPServerInitializer {
+public class RtspClient implements RtspClientInitializer {
 
 	private RtspClientTask rtspTask = null;
-	private RTPServerTask rtpTask = null;
-	private EventLoopGroup workerGroup = new NioEventLoopGroup();
+	private EventLoopGroup workerGroup;
 	private URI uri;
 	private SimpleLogger logger;
 	
 	@Inject
-	public RtspClient(SimpleLogger logger) {
+	public RtspClient(SimpleLogger logger, EventLoopGroup workerGroup) {
 		super();
 		this.logger = logger;
+		this.workerGroup = workerGroup;
 	}
 	
 	@Override
-	public RtspClientHandle initialize(RtspServerDefinition serverDefinition) {
+	public RtspClientHandle initialize(RtspServerDefinition serverDefinition, RTPServerHandle rtpServer) {
 		try {
 			this.uri = serverDefinition.getURI();
-			rtspTask = new RtspClientTask();
+			rtspTask = new RtspClientTask(rtpServer);
 			Thread thread = new Thread(rtspTask);
 			thread.start();
 		} catch (URISyntaxException e1) {
@@ -69,10 +65,12 @@ public class RtspClient implements RtspClientInitializer, RTPServerInitializer {
 		
 		private RtspHandshakeOperation operation;
 		private Bootstrap bootstrap = new Bootstrap();
+		private RTPServerHandle rtpServer;
 
-		public RtspClientTask() {
+		public RtspClientTask(RTPServerHandle rtpServer) {
 			super();
 			this.operation = null;//new RtspHandshakeOperation(uri);
+			this.rtpServer = rtpServer;
 		}
 
 		@Override
@@ -101,7 +99,7 @@ public class RtspClient implements RtspClientInitializer, RTPServerInitializer {
 					}
 				});
 				// Aca estoy conectado, comienzo chain
-				operation.start(RtspClient.this, future.channel());
+				operation.start(rtpServer.serverDefinition(), future.channel());
 				future.channel().closeFuture().sync();
 				logger.info("Channel closed");
 			} catch (Exception e) {
@@ -116,36 +114,5 @@ public class RtspClient implements RtspClientInitializer, RTPServerInitializer {
 			return rtspTask.operation.currentSequence();
 		}
 		return 1;
-	}
-
-	@Override
-	public RTPServerHandle initialize() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	/**
-	 * Tarea principal de cada servidor RTP
-	 * 
-	 * @author pabloc
-	 *
-	 */
-	class RTPServerTask implements Runnable {
-
-		private ServerBootstrap bootstrap = new ServerBootstrap();
-		
-		@Override
-		public void run() {
-			bootstrap.group(workerGroup);
-			bootstrap.channel(NioServerSocketChannel.class);
-			bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
-			bootstrap.handler(new ChannelInitializer<Channel>() {
-
-				@Override
-				protected void initChannel(Channel ch) throws Exception {
-					logger.info("RTP Server Channel Init");
-				}
-			});
-		}
 	}
 }
