@@ -1,6 +1,7 @@
 package com.sgrvg.security.rtp.server;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufHolder;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.MessageAggregator;
 
@@ -11,16 +12,21 @@ import io.netty.handler.codec.MessageAggregator;
  * @author pabloc
  *
  */
-public class NalRtpPacketAggregator extends MessageAggregator<I, S, ByteBufHolder, ByteBufHolder> {
+public class NalRtpPacketAggregator extends MessageAggregator<Object, Object, ByteBufHolder, ByteBufHolder> {
+
+	protected NalRtpPacketAggregator(int maxContentLength) {
+		super(maxContentLength);
+		// TODO Auto-generated constructor stub
+	}
 
 	@Override
-	protected boolean isStartMessage(I msg) throws Exception {
+	protected boolean isStartMessage(Object msg) throws Exception {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	protected boolean isContentMessage(I msg) throws Exception {
+	protected boolean isContentMessage(Object msg) throws Exception {
 		// TODO Auto-generated method stub
 		return false;
 	}
@@ -32,19 +38,20 @@ public class NalRtpPacketAggregator extends MessageAggregator<I, S, ByteBufHolde
 	}
 
 	@Override
-	protected boolean isAggregated(I msg) throws Exception {
+	protected boolean isAggregated(Object msg) throws Exception {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	protected boolean isContentLengthInvalid(S start, int maxContentLength) throws Exception {
+	protected boolean isContentLengthInvalid(Object start, int maxContentLength) throws Exception {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	protected Object newContinueResponse(S start, int maxContentLength, ChannelPipeline pipeline) throws Exception {
+	protected Object newContinueResponse(Object start, int maxContentLength, ChannelPipeline pipeline)
+			throws Exception {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -62,7 +69,7 @@ public class NalRtpPacketAggregator extends MessageAggregator<I, S, ByteBufHolde
 	}
 
 	@Override
-	protected ByteBufHolder beginAggregation(S start, ByteBuf content) throws Exception {
+	protected ByteBufHolder beginAggregation(Object start, ByteBuf content) throws Exception {
 		// TODO Auto-generated method stub
 		return null;
 	}

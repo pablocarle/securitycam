@@ -17,12 +17,17 @@ public class RTPServerHandleImpl implements RTPServerHandle {
 	}
 
 	@Override
-	public void waitConnected() throws InterruptedException {
+	public void waitConnected() throws InterruptedException, RTPServerInitializationException {
 		if (rtpTask.isSuccessfulConnection()) {
 			return;
+		} else if (rtpTask.isFailedConnection()) {
+			throw new RTPServerInitializationException("Failed to connect RTP server");
 		} else {
-			while (!rtpTask.isSuccessfulConnection()) {
+			while (!rtpTask.isSuccessfulConnection() || rtpTask.isFailedConnection()) {
 				Thread.sleep(1000);
+			}
+			if (rtpTask.isFailedConnection()) {
+				throw new RTPServerInitializationException("Failed to connect RTP server");
 			}
 		}
 	}

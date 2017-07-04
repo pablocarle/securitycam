@@ -45,12 +45,13 @@ public class RTPServer implements RTPServerInitializer {
 	class RTPServerTask implements Runnable {
 
 		private ServerBootstrap bootstrap = new ServerBootstrap();
-		private List<Object> listeners;
-		private boolean successfulConnection = false;
+		private List<RTPConnectionStateListener> listeners;
+		private volatile boolean successfulConnection = false;
+		private volatile boolean failedConnection = false;
 		private int port;
 		
-		void addConnectionStateListener() {
-			
+		void addConnectionStateListener(RTPConnectionStateListener listener) {
+			listeners.add(listener);
 		}
 		
 		@Override
@@ -69,22 +70,43 @@ public class RTPServer implements RTPServerInitializer {
 			
 			try {
 				ChannelFuture future = bootstrap.bind().sync();
+				future.addListener(listener -> {
+					if (listener.isSuccess()) {
+						successfulConnection = true;
+						notifySuccessfulConnection();
+					} else {
+						failedConnection = true;
+						notifyFailedConnection();
+					}
+				});
 				future.channel().closeFuture().addListener(new ChannelFutureListener() {
 					
 					@Override
 					public void operationComplete(ChannelFuture future) throws Exception {
 						logger.info("RTP Server Channel closed");
-						listeners.forEach(x -> x.notifyState(new ConnectionStateEvent("connected")));
-						successfulConnection = true;
 					}
 				});
 			} catch (InterruptedException e) {
 				logger.error("Failed to initialize RTP Server", e);
+				failedConnection = true;
+				notifyFailedConnection();
 			}
+		}
+		
+		private void notifySuccessfulConnection() {
+			listeners.forEach(x -> x.notifyState(new ConnectionStateEvent("connected")));
+		}
+		
+		private void notifyFailedConnection() {
+			listeners.forEach(x -> x.notifyState(new ConnectionStateEvent("failed")));
 		}
 		
 		boolean isSuccessfulConnection() {
 			return successfulConnection;
+		}
+		
+		boolean isFailedConnection() {
+			return failedConnection;
 		}
 
 		public int getAssignedPort() {
