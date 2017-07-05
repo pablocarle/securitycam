@@ -34,4 +34,18 @@ public class ApplicationModule extends AbstractModule {
 	public EventLoopGroup defaultEventLoop() {
 		return new NioEventLoopGroup();
 	}
+	
+	@Provides
+	@Named("rtp_server_worker")
+	@Singleton
+	public EventLoopGroup rtpServerWorkerLoopGroup() {
+		return new NioEventLoopGroup();
+	}
+	
+	@Provides
+	@Named("rtp_server_boss")
+	@Singleton
+	public EventLoopGroup rtpServerBossLoopGroup() {
+		return new NioEventLoopGroup();
+	}
 }

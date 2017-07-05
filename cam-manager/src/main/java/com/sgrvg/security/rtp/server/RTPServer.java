@@ -8,27 +8,32 @@ import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 public class RTPServer implements RTPServerInitializer {
 
 	private SimpleLogger logger;
-	private EventLoopGroup workerGroup;
+	private EventLoopGroup workerLoopGroup;
+	private EventLoopGroup bossLoopGroup;
 
 	private RTPServerTask task;
 	private RtpPacketHandler packetHandler;
 	
 	@Inject
-	public RTPServer(SimpleLogger logger, @Named("default_worker_group") EventLoopGroup workerGroup, RtpPacketHandler packetHandler) {
+	public RTPServer(SimpleLogger logger, 
+			@Named("rtp_server_worker") EventLoopGroup workerLoopGroup,
+			@Named("rtp_server_boss") EventLoopGroup bossLoopGroup,
+			RtpPacketHandler packetHandler) {
 		super();
 		this.logger = logger;
-		this.workerGroup = workerGroup;
 		this.packetHandler = packetHandler;
+		this.workerLoopGroup = workerLoopGroup;
+		this.bossLoopGroup = bossLoopGroup;
 	}
 	
 	@Override
@@ -59,12 +64,12 @@ public class RTPServer implements RTPServerInitializer {
 		
 		@Override
 		public void run() {
-			bootstrap.group(workerGroup);
+			bootstrap.group(bossLoopGroup, workerLoopGroup);
 			bootstrap.channel(NioServerSocketChannel.class);
-			bootstrap.childHandler(new ChannelInitializer<Channel>() {
+			bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
 
 				@Override
-				protected void initChannel(Channel ch) throws Exception {
+				protected void initChannel(SocketChannel ch) throws Exception {
 					logger.info("RTP Server Channel Init");
 					ch.pipeline().addLast(packetHandler);
 				}
@@ -72,10 +77,11 @@ public class RTPServer implements RTPServerInitializer {
 			
 			try {
 				ChannelFuture future = bootstrap.bind(port).sync();
+				logger.info("Ended bind sync of RTP Server");
 				future.addListener(listener -> {
 					if (listener.isSuccess()) {
 						logger.info("Success server bootstrap bind");
-						//successfulConnection = true;
+						successfulConnection = true;
 						notifySuccessfulConnection();
 					} else {
 						logger.warn("Failed server bootstrap bind");
@@ -90,10 +96,13 @@ public class RTPServer implements RTPServerInitializer {
 						logger.info("RTP Server Channel closed");
 					}
 				});
+				future.channel().closeFuture().sync();
 			} catch (Exception e) {
 				logger.error("Failed to initialize RTP Server", e);
 				failedConnection = true;
 				notifyFailedConnection();
+			} finally {
+				logger.info("Finally RTP Server");
 			}
 		}
 		

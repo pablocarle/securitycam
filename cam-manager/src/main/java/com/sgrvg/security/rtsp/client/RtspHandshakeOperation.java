@@ -122,7 +122,6 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 			break;
 		}
 		case PLAY: {
-			//next = Optional.empty();
 			next = Optional.of(
 					new TeardownCommand(
 							ctx.channel(), 
@@ -132,6 +131,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 									response)
 							)
 					);
+			next = Optional.empty();
 			break;
 		}
 		case TEARDOWN: {

@@ -24,6 +24,7 @@ public class RtpPacketHandler extends ByteToMessageDecoder {
 	
 	@Override
 	protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+		logger.info("Decode packet!");
 		if (!isValidRTPPacket(in)) {
 			return;
 		}
