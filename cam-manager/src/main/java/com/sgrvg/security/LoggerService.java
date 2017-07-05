@@ -2,7 +2,9 @@ package com.sgrvg.security;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.io.Serializable;
+import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -12,6 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import com.google.inject.Inject;
 
@@ -27,9 +30,15 @@ public class LoggerService implements SimpleLogger {
 	private static final String USERNAME = "security";
 	private static final String PASSWORD = "security123";
 	private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
+	
+	private static final String LOG_MARKER = "{}";
 
 	private final BlockingQueue<LogEntry> entries;
 	private final ExecutorService executor;
+	
+	private final boolean infoEnabled;
+	private final boolean warnEnabled;
+	private final boolean errorEnabled;
 
 	private enum Mode {
 		SCHEDULED,
@@ -42,13 +51,16 @@ public class LoggerService implements SimpleLogger {
 	}
 
 	{
-		InputStream is = this.getClass().getClassLoader().getResourceAsStream("");
+		InputStream is = this.getClass().getClassLoader().getResourceAsStream("logging.properties");
 		Properties props = new Properties();
 		try {
 			props.load(is);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		infoEnabled = Boolean.parseBoolean(props.getProperty("info", "true"));
+		warnEnabled = Boolean.parseBoolean(props.getProperty("warn", "true"));
+		errorEnabled = Boolean.parseBoolean(props.getProperty("error", "true"));
 		entries = new LinkedBlockingDeque<>(Integer.valueOf(props.getProperty("max_log_queue", "1000")));
 		executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
 			final ThreadFactory delegate = Executors.defaultThreadFactory();
@@ -61,6 +73,7 @@ public class LoggerService implements SimpleLogger {
 				return result;
 			}
 		});
+		executor.submit(new LogSendTask());
 	}
 
 	@Override
@@ -93,17 +106,17 @@ public class LoggerService implements SimpleLogger {
 
 	@Override
 	public boolean isErrorEnabled() {
-		return true;
+		return errorEnabled;
 	}
 
 	@Override
 	public boolean isInfoEnabled() {
-		return true;
+		return infoEnabled;
 	}
 
 	@Override
 	public boolean isWarnEnabled() {
-		return true;
+		return warnEnabled;
 	}
 
 	@Override
@@ -124,10 +137,13 @@ public class LoggerService implements SimpleLogger {
 		StringBuilder message = new StringBuilder(messageWithMarkers);
 		if (args != null && args.length > 0) {
 			Arrays.stream(args).forEach(x -> {
-				//TODO 
+				int index = message.indexOf(LOG_MARKER);
+				if (index >= 0) {
+					message.replace(index, index + LOG_MARKER.length(), String.valueOf(x));
+				}
 			});
 		}
-		return messageWithMarkers;
+		return message.toString();
 	}
 
 	private class LogEntry implements Serializable {
@@ -147,14 +163,17 @@ public class LoggerService implements SimpleLogger {
 			this.e = e;
 		}
 
+		@SuppressWarnings("unused")
 		public String getMessage() {
 			return message;
 		}
 
+		@SuppressWarnings("unused")
 		public String getCategory() {
 			return category;
 		}
 
+		@SuppressWarnings("unused")
 		public Date getTimestamp() {
 			return timestamp;
 		}
@@ -169,10 +188,14 @@ public class LoggerService implements SimpleLogger {
 			message.append(" - ");
 			message.append(category);
 			message.append(": ");
-			message.append(message);
+			message.append(this.message);
 
 			if (e != null) {
-				message.append(Arrays.toString(e.getStackTrace()));
+				StringWriter stringWriter = new StringWriter();
+				PrintWriter printWriter = new PrintWriter(stringWriter);
+				e.printStackTrace(printWriter);
+				message.append(stringWriter.toString());
+				printWriter.close();
 			}
 			return message.toString();
 		}
@@ -184,10 +207,27 @@ public class LoggerService implements SimpleLogger {
 		public void run() {
 			//TODO Debe verificar si esta autenticado por ejemplo contra el servidor.
 			while (!executor.isShutdown()) {
-				
+				try {
+					if (isAuthenticated()) {
+						sendData(entries.poll(10000, TimeUnit.MILLISECONDS));
+					}
+				} catch (InterruptedException e) {
+					System.err.println("Interrupted");
+					e.printStackTrace();
+				}
 			}
 		}
 		
+		private boolean isAuthenticated() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		private void sendData(LogEntry poll) {
+			// TODO Auto-generated method stub
+			
+		}
+
 		private void authenticate() {
 			
 		}

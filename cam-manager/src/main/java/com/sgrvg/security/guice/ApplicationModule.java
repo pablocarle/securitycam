@@ -12,6 +12,7 @@ import com.sgrvg.security.rtsp.client.RtspClient;
 import com.sgrvg.security.rtsp.client.RtspClientInitializer;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 
 public class ApplicationModule extends AbstractModule {
 
@@ -31,7 +32,6 @@ public class ApplicationModule extends AbstractModule {
 	@Named("default_worker_group")
 	@Singleton
 	public EventLoopGroup defaultEventLoop() {
-		return null;
+		return new NioEventLoopGroup();
 	}
-	
 }

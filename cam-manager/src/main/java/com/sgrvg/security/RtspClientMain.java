@@ -11,6 +11,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.sgrvg.security.guice.ApplicationModule;
 import com.sgrvg.security.rtp.server.RTPServerHandle;
+import com.sgrvg.security.rtp.server.RTPServerInitializationException;
 import com.sgrvg.security.rtp.server.RTPServerInitializer;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 import com.sgrvg.security.rtsp.client.RtspClientHandle;
@@ -24,10 +25,14 @@ public class RtspClientMain {
 	private static List<RTPServerHandle> rtpServerInstances;
 	private static List<RtspClientHandle> rtspClientInstances;
 	
+	private static Injector injector; 
+	
 	static {
 		Properties props = new Properties();
 		try {
 			props.load(RtspClientMain.class.getClassLoader().getResourceAsStream("rtsp_servers.properties"));
+			injector = Guice.createInjector(new ApplicationModule());
+			logger = injector.getInstance(SimpleLogger.class);
 			loadServers(props);
 		} catch (IOException e) {
 			System.err.println("Couldn't find resource");
@@ -45,10 +50,6 @@ public class RtspClientMain {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		final Injector injector = Guice.createInjector(new ApplicationModule());
-
-		logger = injector.getInstance(SimpleLogger.class);
-		
 		logger.info("Starting Services");
 		
 		rtpServerInstances = new ArrayList<>();
@@ -58,14 +59,19 @@ public class RtspClientMain {
 			RtspClientInitializer rtspClientInitializer = injector.getInstance(RtspClientInitializer.class);
 			RTPServerInitializer rtpServerInitializer = injector.getInstance(RTPServerInitializer.class);
 			
-			RTPServerHandle rtpServer = rtpServerInitializer.initialize();
-			rtpServerInstances.add(rtpServer);
-			rtspClientInstances.add(rtspClientInitializer.initialize(server, rtpServer));
+			try {
+				RTPServerHandle rtpServer = rtpServerInitializer.initialize(server);
+				rtpServer.waitConnected();
+				rtpServerInstances.add(rtpServer);
+				rtspClientInstances.add(rtspClientInitializer.initialize(server, rtpServer));
+			} catch (InterruptedException | RTPServerInitializationException e) {
+				logger.error("Failed to initialize server {}", e, server);
+			}
 		});
 	}
 	
 	private static void loadServers(final Properties props) {
-		System.out.println("Load Servers");
+		logger.info("Load Servers");
 		servers = Arrays.stream(props.getProperty("server_names").split(","))
 			  .filter(x -> x != null && x.trim().length() > 0)
 		      .map(serverName -> {

@@ -93,6 +93,7 @@ public class RtpPacket {
 		StringBuilder content = new StringBuilder();
 		content.append("{\n\tversion: ");
 		content.append(version);
+		content.append("\n\tmarker: " + marker);
 		return content.toString();
 	}
 
@@ -100,6 +101,7 @@ public class RtpPacket {
 		this.data = Unpooled.wrappedBuffer(data);
 	}
 	
+	@SuppressWarnings("unused")
 	private void setData(ByteBuf data) {
 		this.data = data;
 	}

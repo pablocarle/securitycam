@@ -46,6 +46,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	}
 
 	public void start(RTPServerDefinition rtpServerDefinition, Channel channel) throws Exception {
+		this.uri = rtpServerDefinition.getRtspServerURI();
 		this.lastCommand = new OptionsCommand(channel, new OptionsState(uri, sequence));
 		this.rtpServer = rtpServerDefinition;
 		ChannelFuture future = lastCommand.call();
@@ -188,11 +189,10 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 		}
 		if (msg instanceof HttpContent) {
 			HttpContent content = (HttpContent) msg;
-			System.err.print(content.content().toString(CharsetUtil.UTF_8));
-			System.err.flush();
+			logger.info(content.content().toString(CharsetUtil.UTF_8));
 
 			if (content instanceof LastHttpContent) {
-				System.err.println("} END OF CONTENT");
+				logger.info("} END OF CONTENT");
 			}
 		}
 	}

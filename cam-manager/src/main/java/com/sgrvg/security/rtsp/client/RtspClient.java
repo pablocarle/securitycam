@@ -4,6 +4,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.rtp.server.RTPServerHandle;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
@@ -35,7 +36,7 @@ public class RtspClient implements RtspClientInitializer {
 	private SimpleLogger logger;
 	
 	@Inject
-	public RtspClient(SimpleLogger logger, EventLoopGroup workerGroup) {
+	public RtspClient(SimpleLogger logger, @Named("default_worker_group") EventLoopGroup workerGroup) {
 		super();
 		this.logger = logger;
 		this.workerGroup = workerGroup;
@@ -64,13 +65,14 @@ public class RtspClient implements RtspClientInitializer {
 	class RtspClientTask implements Runnable { 
 		
 		private RtspHandshakeOperation operation;
-		private Bootstrap bootstrap = new Bootstrap();
+		private Bootstrap bootstrap;
 		private RTPServerHandle rtpServer;
 
 		public RtspClientTask(RTPServerHandle rtpServer) {
 			super();
-			this.operation = null;//new RtspHandshakeOperation(uri);
+			this.operation = new RtspHandshakeOperation(logger);
 			this.rtpServer = rtpServer;
+			this.bootstrap = new Bootstrap();
 		}
 
 		@Override

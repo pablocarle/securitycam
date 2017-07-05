@@ -3,14 +3,15 @@ package com.sgrvg.security.rtp.server;
 import java.util.List;
 
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.sgrvg.security.SimpleLogger;
+import com.sgrvg.security.rtsp.RtspServerDefinition;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
@@ -20,20 +21,22 @@ public class RTPServer implements RTPServerInitializer {
 	private EventLoopGroup workerGroup;
 
 	private RTPServerTask task;
+	private RtpPacketHandler packetHandler;
 	
 	@Inject
-	public RTPServer(SimpleLogger logger, EventLoopGroup workerGroup) {
+	public RTPServer(SimpleLogger logger, @Named("default_worker_group") EventLoopGroup workerGroup, RtpPacketHandler packetHandler) {
 		super();
 		this.logger = logger;
 		this.workerGroup = workerGroup;
+		this.packetHandler = packetHandler;
 	}
 	
 	@Override
-	public RTPServerHandle initialize() {
+	public RTPServerHandle initialize(RtspServerDefinition server) {
 		task = new RTPServerTask();
 		Thread thread = new Thread(task);
 		thread.start();
-		return new RTPServerHandleImpl(task);
+		return new RTPServerHandleImpl(task, server);
 	}
 	
 	/**
@@ -48,7 +51,7 @@ public class RTPServer implements RTPServerInitializer {
 		private List<RTPConnectionStateListener> listeners;
 		private volatile boolean successfulConnection = false;
 		private volatile boolean failedConnection = false;
-		private int port;
+		private int port = 35678;
 		
 		void addConnectionStateListener(RTPConnectionStateListener listener) {
 			listeners.add(listener);
@@ -58,23 +61,24 @@ public class RTPServer implements RTPServerInitializer {
 		public void run() {
 			bootstrap.group(workerGroup);
 			bootstrap.channel(NioServerSocketChannel.class);
-			bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
-			bootstrap.handler(new ChannelInitializer<Channel>() {
+			bootstrap.childHandler(new ChannelInitializer<Channel>() {
 
 				@Override
 				protected void initChannel(Channel ch) throws Exception {
 					logger.info("RTP Server Channel Init");
-					ch.pipeline().addLast(new RtpPacketHandler());
+					ch.pipeline().addLast(packetHandler);
 				}
 			});
 			
 			try {
-				ChannelFuture future = bootstrap.bind().sync();
+				ChannelFuture future = bootstrap.bind(port).sync();
 				future.addListener(listener -> {
 					if (listener.isSuccess()) {
-						successfulConnection = true;
+						logger.info("Success server bootstrap bind");
+						//successfulConnection = true;
 						notifySuccessfulConnection();
 					} else {
+						logger.warn("Failed server bootstrap bind");
 						failedConnection = true;
 						notifyFailedConnection();
 					}
@@ -86,7 +90,7 @@ public class RTPServer implements RTPServerInitializer {
 						logger.info("RTP Server Channel closed");
 					}
 				});
-			} catch (InterruptedException e) {
+			} catch (Exception e) {
 				logger.error("Failed to initialize RTP Server", e);
 				failedConnection = true;
 				notifyFailedConnection();
@@ -94,11 +98,15 @@ public class RTPServer implements RTPServerInitializer {
 		}
 		
 		private void notifySuccessfulConnection() {
-			listeners.forEach(x -> x.notifyState(new ConnectionStateEvent("connected")));
+			if (listeners != null) {
+				listeners.forEach(x -> x.notifyState(new ConnectionStateEvent("connected")));
+			}
 		}
 		
 		private void notifyFailedConnection() {
-			listeners.forEach(x -> x.notifyState(new ConnectionStateEvent("failed")));
+			if (listeners != null) {
+				listeners.forEach(x -> x.notifyState(new ConnectionStateEvent("failed")));
+			}
 		}
 		
 		boolean isSuccessfulConnection() {

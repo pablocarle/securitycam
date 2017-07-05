@@ -1,19 +1,24 @@
 package com.sgrvg.security.rtp.server;
 
+import java.net.URISyntaxException;
+
 import com.sgrvg.security.rtp.server.RTPServer.RTPServerTask;
+import com.sgrvg.security.rtsp.RtspServerDefinition;
 
 public class RTPServerHandleImpl implements RTPServerHandle {
 
 	private RTPServerTask rtpTask;
+	private RtspServerDefinition rtspServerDefinition;
 
-	public RTPServerHandleImpl(RTPServerTask rtpTask) {
+	public RTPServerHandleImpl(RTPServerTask rtpTask, RtspServerDefinition server) {
 		super();
 		this.rtpTask = rtpTask;
+		this.rtspServerDefinition = server;
 	}
 
 	@Override
-	public RTPServerDefinition serverDefinition() {
-		return new RTPServerDefinition(rtpTask.getAssignedPort());
+	public RTPServerDefinition serverDefinition() throws URISyntaxException {
+		return new RTPServerDefinition(rtpTask.getAssignedPort(), rtspServerDefinition.getURI());
 	}
 
 	@Override
