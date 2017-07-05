@@ -7,32 +7,29 @@ import com.google.inject.name.Named;
 import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 
-import io.netty.bootstrap.ServerBootstrap;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.nio.NioDatagramChannel;
 
 public class RTPServer implements RTPServerInitializer {
 
 	private SimpleLogger logger;
-	private EventLoopGroup workerLoopGroup;
 	private EventLoopGroup bossLoopGroup;
 
 	private RTPServerTask task;
-	private RtpPacketHandler packetHandler;
+	private RTPPacketHandler packetHandler;
 	
 	@Inject
 	public RTPServer(SimpleLogger logger, 
-			@Named("rtp_server_worker") EventLoopGroup workerLoopGroup,
 			@Named("rtp_server_boss") EventLoopGroup bossLoopGroup,
-			RtpPacketHandler packetHandler) {
+			RTPPacketHandler packetHandler) {
 		super();
 		this.logger = logger;
 		this.packetHandler = packetHandler;
-		this.workerLoopGroup = workerLoopGroup;
 		this.bossLoopGroup = bossLoopGroup;
 	}
 	
@@ -52,7 +49,7 @@ public class RTPServer implements RTPServerInitializer {
 	 */
 	class RTPServerTask implements Runnable {
 
-		private ServerBootstrap bootstrap = new ServerBootstrap();
+		private Bootstrap bootstrap = new Bootstrap();
 		private List<RTPConnectionStateListener> listeners;
 		private volatile boolean successfulConnection = false;
 		private volatile boolean failedConnection = false;
@@ -64,14 +61,15 @@ public class RTPServer implements RTPServerInitializer {
 		
 		@Override
 		public void run() {
-			bootstrap.group(bossLoopGroup, workerLoopGroup);
-			bootstrap.channel(NioServerSocketChannel.class);
-			bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
+			bootstrap.group(bossLoopGroup);
+			bootstrap.channel(NioDatagramChannel.class);
+			bootstrap.handler(new ChannelInitializer<DatagramChannel>() {
 
 				@Override
-				protected void initChannel(SocketChannel ch) throws Exception {
+				protected void initChannel(DatagramChannel ch) throws Exception {
 					logger.info("RTP Server Channel Init");
 					ch.pipeline().addLast(packetHandler);
+					logger.info("Added handler: {}", packetHandler);
 				}
 			});
 			
