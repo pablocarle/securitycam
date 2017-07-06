@@ -1,6 +1,7 @@
 package com.sgrvg.security.rtp;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -89,13 +90,10 @@ public class RtpPacket implements Comparable<RtpPacket> {
 	
 	@Override
 	public String toString() {
-		//TODO Deshabilitar para despliegue
-		StringBuilder content = new StringBuilder();
-		content.append("{\n\tversion: ");
-		content.append(version);
-		content.append("\n\tmarker: " + marker);
-		
-		return content.toString();
+		return "RtpPacket [version=" + version + ", marker=" + marker + ", payloadType=" + payloadType
+				+ ", sequenceNumber=" + sequenceNumber + ", timestamp=" + timestamp + ", ssrc=" + ssrc
+				+ ", extensionHeaderData=" + extensionHeaderData + ", extensionData=" + Arrays.toString(extensionData)
+				+ ", data=" + data + "]";
 	}
 
 	private void setData(byte[] data) {
