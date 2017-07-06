@@ -23,14 +23,14 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
-		logger.info("channel read UDP");
 		ByteBuf content = msg.content();
 		if (!RtpPacket.isValidRTPPacket(content)) {
 			logger.info("INVALID RTP PACKET");
 			return;
 		}
 		RtpPacket packet = RtpPacket.decode(content);
-		//TODO Que hago con el packet?
+		//TODO Que hago con el packet? Deberia darme cuanta de que parte tengo de la NAL, e ir construyendo suficiente para 
+		// saber si tengo uno completo o no.
 	}
 
 }

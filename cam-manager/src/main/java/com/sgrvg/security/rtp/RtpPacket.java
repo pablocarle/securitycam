@@ -11,7 +11,7 @@ import io.netty.buffer.Unpooled;
  * @author pabloc
  *
  */
-public class RtpPacket {
+public class RtpPacket implements Comparable<RtpPacket> {
 
 	private RtpVersion version;
 	private ArrayList<Long> contributingSourceIds;
@@ -94,6 +94,7 @@ public class RtpPacket {
 		content.append("{\n\tversion: ");
 		content.append(version);
 		content.append("\n\tmarker: " + marker);
+		
 		return content.toString();
 	}
 
@@ -144,5 +145,48 @@ public class RtpPacket {
 
 	public ByteBuf getData() {
 		return data;
+	}
+	
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + (marker ? 1231 : 1237);
+		result = prime * result + payloadType;
+		result = prime * result + sequenceNumber;
+		result = prime * result + (int) (timestamp ^ (timestamp >>> 32));
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		RtpPacket other = (RtpPacket) obj;
+		if (marker != other.marker)
+			return false;
+		if (payloadType != other.payloadType)
+			return false;
+		if (sequenceNumber != other.sequenceNumber)
+			return false;
+		if (timestamp != other.timestamp)
+			return false;
+		return true;
+	}
+
+	@Override
+	public int compareTo(RtpPacket o) {
+		if (this.equals(o)) {
+			return 0;
+		}
+		int compare = Integer.compare(this.sequenceNumber, o.sequenceNumber);
+		if (compare == 0) {
+			compare = Long.compare(this.timestamp, o.timestamp);
+		}
+		return compare;
 	}
 }
