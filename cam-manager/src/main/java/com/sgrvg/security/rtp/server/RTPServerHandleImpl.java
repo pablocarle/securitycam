@@ -9,11 +9,13 @@ public class RTPServerHandleImpl implements RTPServerHandle {
 
 	private RTPServerTask rtpTask;
 	private RtspServerDefinition rtspServerDefinition;
+	private String id;
 
-	public RTPServerHandleImpl(RTPServerTask rtpTask, RtspServerDefinition server) {
+	public RTPServerHandleImpl(String id, RTPServerTask rtpTask, RtspServerDefinition server) {
 		super();
 		this.rtpTask = rtpTask;
 		this.rtspServerDefinition = server;
+		this.id = id;
 	}
 
 	@Override
@@ -35,5 +37,10 @@ public class RTPServerHandleImpl implements RTPServerHandle {
 				throw new RTPServerInitializationException("Failed to connect RTP server");
 			}
 		}
+	}
+
+	@Override
+	public String getID() {
+		return id;
 	}
 }

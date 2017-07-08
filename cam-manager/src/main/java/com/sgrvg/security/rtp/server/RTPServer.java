@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.sgrvg.security.ServerConfigHolder;
 import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 
@@ -15,22 +16,33 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 
+/**
+ * RTP Server implementation. Handles startup of rtp server
+ * 
+ * @author pabloc
+ *
+ */
 public class RTPServer implements RTPServerInitializer {
 
+	// Deps
 	private SimpleLogger logger;
 	private EventLoopGroup bossLoopGroup;
-
-	private RTPServerTask task;
 	private RTPPacketHandler packetHandler;
+	private ServerConfigHolder serverConfig;
+	
+	// State
+	private RTPServerTask task;
 	
 	@Inject
 	public RTPServer(SimpleLogger logger, 
 			@Named("rtp_server_boss") EventLoopGroup bossLoopGroup,
-			RTPPacketHandler packetHandler) {
+			RTPPacketHandler packetHandler,
+			ServerConfigHolder serverConfig) {
 		super();
 		this.logger = logger;
 		this.packetHandler = packetHandler;
 		this.bossLoopGroup = bossLoopGroup;
+		this.serverConfig = serverConfig;
 	}
 	
 	@Override
@@ -38,7 +50,7 @@ public class RTPServer implements RTPServerInitializer {
 		task = new RTPServerTask();
 		Thread thread = new Thread(task);
 		thread.start();
-		return new RTPServerHandleImpl(task, server);
+		return new RTPServerHandleImpl(server.getName(), task, server);
 	}
 	
 	/**

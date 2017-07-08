@@ -78,7 +78,7 @@ public class RtspClientMain {
 		    	  String host = props.getProperty(serverName + "_ip");
 		    	  int port = Integer.valueOf(props.getProperty(serverName + "_port"));
 		    	  String endpoint = props.getProperty(serverName + "_path");
-		    	  return new RtspServerDefinition(host, port, endpoint);
+		    	  return new RtspServerDefinition(serverName, host, port, endpoint);
 		      }).collect(Collectors.toList());
 	}
 }

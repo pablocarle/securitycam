@@ -8,12 +8,14 @@ public class RtspServerDefinition {
 	private String host;
 	private int port;
 	private String endpoint;
-	
-	public RtspServerDefinition(String host, int port, String endpoint) {
+	private String name;
+
+	public RtspServerDefinition(String name, String host, int port, String endpoint) {
 		super();
 		this.host = host;
 		this.port = port;
 		this.endpoint = endpoint;
+		this.name = name;
 	}
 
 	public String getHost() {
@@ -26,6 +28,10 @@ public class RtspServerDefinition {
 
 	public String getEndpoint() {
 		return endpoint;
+	}
+	
+	public String getName() {
+		return name;
 	}
 
 	public URI getURI() throws URISyntaxException {
