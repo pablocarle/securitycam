@@ -14,60 +14,59 @@ import io.netty.buffer.Unpooled;
  */
 public class RtpPacket implements Comparable<RtpPacket> {
 
-	private RtpVersion version;
-	private ArrayList<Long> contributingSourceIds;
-	private boolean marker;
-	private int payloadType;
-	private int sequenceNumber;
-	private long timestamp;
-	private long ssrc;
-	private short extensionHeaderData;
-	private byte[] extensionData;
-	private ByteBuf data;
+	protected RtpVersion version;
+	protected ArrayList<Long> contributingSourceIds;
+	protected boolean marker;
+	protected int payloadType;
+	protected int sequenceNumber;
+	protected long timestamp;
+	protected long ssrc;
+	protected short extensionHeaderData;
+	protected byte[] extensionData;
+	protected ByteBuf data;
 
 	public static boolean isValidRTPPacket(ByteBuf buffer) {
 		return buffer.readableBytes() >= 12;
 	}
 	
-	public static RtpPacket decode(byte[] data) {
-		return decode(Unpooled.wrappedBuffer(data));
+	public RtpPacket(byte[] data) {
+		this(Unpooled.wrappedBuffer(data));
 	}
 	
-	public static RtpPacket decode(ByteBuf buffer) throws IndexOutOfBoundsException {
+	public RtpPacket(ByteBuf buffer) throws IndexOutOfBoundsException {
 		if (!isValidRTPPacket(buffer)) {
 			throw new IllegalArgumentException("A RTP packet must be at least 12 octets long");
 		}
 
 		// Version, Padding, eXtension, CSRC Count
-		RtpPacket packet = new RtpPacket();
 		byte b = buffer.readByte();
-		packet.version = RtpVersion.fromByte(b);
+		this.version = RtpVersion.fromByte(b);
 		boolean padding = (b & 0x20) > 0; // mask 0010 0000
 		boolean extension = (b & 0x10) > 0; // mask 0001 0000
 		int contributingSourcesCount = b & 0x0f; // mask 0000 1111
 
 		// Marker, Payload Type
 		b = buffer.readByte();
-		packet.marker = (b & 0x80) > 0; // mask 0000 0001
-		packet.payloadType = (b & 0x7f); // mask 0111 1111
+		this.marker = (b & 0x80) > 0; // mask 0000 0001
+		this.payloadType = (b & 0x7f); // mask 0111 1111
 
-		packet.sequenceNumber = buffer.readUnsignedShort();
-		packet.timestamp = buffer.readUnsignedInt();
-		packet.ssrc = buffer.readUnsignedInt();
+		this.sequenceNumber = buffer.readUnsignedShort();
+		this.timestamp = buffer.readUnsignedInt();
+		this.ssrc = buffer.readUnsignedInt();
 
 		// Read extension headers & data
 		if (extension) {
-			packet.extensionHeaderData = buffer.readShort();
-			packet.extensionData = new byte[buffer.readUnsignedShort()];
-			buffer.readBytes(packet.extensionData);
+			this.extensionHeaderData = buffer.readShort();
+			this.extensionData = new byte[buffer.readUnsignedShort()];
+			buffer.readBytes(this.extensionData);
 		}
 
 		// Read CCRC's
 		if (contributingSourcesCount > 0) {
-			packet.contributingSourceIds = new ArrayList<>(contributingSourcesCount);
+			this.contributingSourceIds = new ArrayList<>(contributingSourcesCount);
 			for (int i = 0; i < contributingSourcesCount; i++) {
 				long contributingSource = buffer.readUnsignedInt();
-				packet.contributingSourceIds.add(contributingSource);
+				this.contributingSourceIds.add(contributingSource);
 			}
 		}
 
@@ -75,17 +74,16 @@ public class RtpPacket implements Comparable<RtpPacket> {
 			// No padding used, assume remaining data is the packet
 			byte[] remainingBytes = new byte[buffer.readableBytes()];
 			buffer.readBytes(remainingBytes);
-			packet.setData(remainingBytes);
+			this.setData(remainingBytes);
 		} else {
 			// Padding bit was set, so last byte contains the number of padding octets that should be discarded.
 			short lastByte = buffer.getUnsignedByte(buffer.readerIndex() + buffer.readableBytes() - 1);
 			byte[] dataBytes = new byte[buffer.readableBytes() - lastByte];
 			buffer.readBytes(dataBytes);
-			packet.setData(dataBytes);
+			this.setData(dataBytes);
 			// Discard rest of buffer.
 			buffer.skipBytes(buffer.readableBytes());
 		}
-		return packet;
 	}
 	
 	@Override
@@ -146,7 +144,7 @@ public class RtpPacket implements Comparable<RtpPacket> {
 	}
 	
 	@Override
-	public int hashCode() {
+	public final int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + (marker ? 1231 : 1237);
@@ -157,7 +155,7 @@ public class RtpPacket implements Comparable<RtpPacket> {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public final boolean equals(Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)

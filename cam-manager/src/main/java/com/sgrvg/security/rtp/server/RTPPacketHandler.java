@@ -2,6 +2,7 @@ package com.sgrvg.security.rtp.server;
 
 import com.google.inject.Inject;
 import com.sgrvg.security.SimpleLogger;
+import com.sgrvg.security.h264.H264RtpPacket;
 import com.sgrvg.security.rtp.RtpPacket;
 
 import io.netty.buffer.ByteBuf;
@@ -28,9 +29,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			logger.info("INVALID RTP PACKET");
 			return;
 		}
-		RtpPacket packet = RtpPacket.decode(content);
-		//TODO Que hago con el packet? Deberia darme cuanta de que parte tengo de la NAL, e ir construyendo suficiente para 
-		// saber si tengo uno completo o no.
+		H264RtpPacket packet = new H264RtpPacket(content);
+		logger.info("Received packet: {}", packet);
 	}
-
 }
