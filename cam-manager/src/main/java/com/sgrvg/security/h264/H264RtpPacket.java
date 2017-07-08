@@ -21,15 +21,18 @@ public class H264RtpPacket extends RtpPacket {
 	private int startBit = 0;
 	private int endBit = 0;
 	
+	private byte firstByte;
+	private byte secondByte;
+	
 	public H264RtpPacket(ByteBuf buffer) throws IndexOutOfBoundsException {
 		super(buffer);
 		decodeH264Fragment();
 	}
 
 	private void decodeH264Fragment() {
-		byte firstByte = data.readByte();
+		firstByte = data.readByte();
 		fragmentType = firstByte & 0x1F;
-		byte secondByte = data.readByte();
+		secondByte = data.readByte();
 		nalType = secondByte & 0x1F;
 		startBit = secondByte & 0x80;
 		endBit = secondByte & 0x40;
@@ -46,6 +49,34 @@ public class H264RtpPacket extends RtpPacket {
 				+ payloadType + ", sequenceNumber=" + sequenceNumber + ", timestamp=" + timestamp + ", ssrc=" + ssrc
 				+ ", extensionHeaderData=" + extensionHeaderData + ", extensionData=" + Arrays.toString(extensionData)
 				+ ", data=" + data + "]";
+	}
+	
+	/**
+	 * Get processed data of this fragment's video data;
+	 * 
+	 * @return
+	 */
+	public byte[] getVideoData() {
+		byte[] videoData;
+		if (isStart()) {
+			videoData = new byte[1 + otherVideoData.readableBytes()];
+			byte part = (byte)(firstByte & 0xE0);
+			byte combined = (byte)(part | (secondByte & 0x1F));
+			videoData[0] = combined;
+			otherVideoData.readBytes(videoData, 1, otherVideoData.readableBytes());
+		} else {
+			videoData = new byte[otherVideoData.readableBytes()];
+			otherVideoData.readBytes(videoData);
+		}
+		return videoData;
+	}
+	
+	public int getVideoDataSize() {
+		if (isStart()) {
+			return 1 + otherVideoData.readableBytes();
+		} else {
+			return otherVideoData.readableBytes();
+		}
 	}
 	
 	public boolean isStart() {
@@ -78,5 +109,9 @@ public class H264RtpPacket extends RtpPacket {
 
 	public int getEndBit() {
 		return endBit;
+	}
+	
+	public byte getFirstByte() {
+		return firstByte;
 	}
 }

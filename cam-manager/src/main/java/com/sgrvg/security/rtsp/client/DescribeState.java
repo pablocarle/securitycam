@@ -61,8 +61,8 @@ public class DescribeState extends RtspHandshakeState {
 				if (params.length != 2) {
 					throw new RuntimeException("Expected pps and sps");
 				}
-				sequenceParameterSet = Base64.getDecoder().decode(params[0]);
-				pictureParameterSet = Base64.getDecoder().decode(params[1]);
+				sequenceParameterSet = Base64.getDecoder().decode(params[0].trim());
+				pictureParameterSet = Base64.getDecoder().decode(params[1].trim());
 			}
 		}
 	}

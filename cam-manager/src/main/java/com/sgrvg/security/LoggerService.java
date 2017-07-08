@@ -5,8 +5,6 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -18,16 +16,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
 import com.ning.http.client.ListenableFuture;
-import com.ning.http.client.Param;
 import com.ning.http.client.Response;
 
 /**
@@ -83,34 +80,31 @@ public final class LoggerService implements SimpleLogger {
 				return result;
 			}
 		});
+		System.out.println("Submit log send task");
 		executor.submit(new LogSendTask());
 	}
 
 	@Override
 	public void error(String arg0, Object...args) {
 		LogEntry log = new LogEntry(buildMessage(arg0, args), "ERROR", new Date(), null);
-		System.out.println(log);
 		entries.add(log);
 	}
 
 	@Override
 	public void error(String arg0, Throwable arg1, Object...args) {
 		LogEntry log = new LogEntry(buildMessage(arg0, args), "ERROR", new Date(), arg1);
-		System.err.println(log);
 		entries.add(log);
 	}
 
 	@Override
 	public void info(String arg0, Object...args) {
 		LogEntry log = new LogEntry(buildMessage(arg0, args), "INFO", new Date(), null);
-		System.out.println(log);
 		entries.add(log);
 	}
 
 	@Override
 	public void info(String arg0, Throwable arg1, Object...args) {
 		LogEntry log = new LogEntry(buildMessage(arg0, args), "INFO", new Date(), arg1);
-		System.out.println(log);
 		entries.add(log);
 	}
 
@@ -132,14 +126,12 @@ public final class LoggerService implements SimpleLogger {
 	@Override
 	public void warn(String arg0, Object...args) {
 		LogEntry log = new LogEntry(buildMessage(arg0, args), "WARN", new Date(), null);
-		System.out.println(log);
 		entries.add(log);
 	}
 
 	@Override
 	public void warn(String arg0, Throwable arg1, Object... args) {
-		LogEntry log = new LogEntry(buildMessage(arg0, args), "WARN", new Date(), null);
-		System.out.println(log);
+		LogEntry log = new LogEntry(buildMessage(arg0, args), "WARN", new Date(), arg1);
 		entries.add(log);
 	}
 
@@ -218,12 +210,15 @@ public final class LoggerService implements SimpleLogger {
 
 		{
 			AsyncHttpClientConfig cf = new AsyncHttpClientConfig.Builder()
-					.setUserAgent("SimpleLogger - CAM SECURITY").build();
+					.setUserAgent("SimpleLogger - CAM SECURITY")
+					.setConnectTimeout(2000)
+					.build();
 			http = new AsyncHttpClient(cf);
 		}
 
 		@Override
 		public void run() {
+			long start = System.currentTimeMillis();
 			LoggerService.this.info("Start Logging Service task");
 			authenticate();
 			while (!executor.isShutdown()) {
@@ -231,8 +226,11 @@ public final class LoggerService implements SimpleLogger {
 					if (isAuthenticated()) {
 						sendData(entries.poll(10000, TimeUnit.MILLISECONDS));
 					} else {
-						Thread.sleep(30 * 1000);
-						authenticate();
+						long now = System.currentTimeMillis();
+						if (now - start > (60 * 1000)) {
+							authenticate();
+						}
+						System.out.println(entries.poll(2000, TimeUnit.MILLISECONDS));
 					}
 				} catch (InterruptedException e) {
 					System.err.println("Interrupted");
@@ -270,14 +268,13 @@ public final class LoggerService implements SimpleLogger {
 		private void authenticate() {
 			try {
 				String url = SERVER_LOG_LOGIN_URL + "?j_username=" + USERNAME + "&j_password=" + PASSWORD;  
-				url = URLEncoder.encode(url, "UTF-8");
 				LoggerService.this.info("Trying authenticate to remote service in {}", url);
 				Response response = http.preparePost(url)
 					.addHeader("Content-Type", "application/x-www-form-urlencoded")
-					.setFollowRedirects(false)
-					.setFormParams(Lists.newArrayList(new Param("j_username", USERNAME),
-													  new Param("j_password", PASSWORD)))
-					.execute().get();
+					.setFollowRedirects(false)	
+					.setRequestTimeout(1)
+					.execute()
+					.get(10, TimeUnit.MILLISECONDS);
 				if (isSuccess(response.getStatusCode())) {
 					LoggerService.this.warn("Success authenticate to remote service");
 					authenticated = true;
@@ -285,9 +282,11 @@ public final class LoggerService implements SimpleLogger {
 					LoggerService.this.warn("Failed to authenticate to remote service. Returned status code: {}", response.getStatusCode());
 					authenticated = false;
 				}
-			} catch (UnsupportedEncodingException | InterruptedException | ExecutionException e) {
+			} catch (InterruptedException | ExecutionException | TimeoutException e) {
 				LoggerService.this.error("Failed to authenticate to url: ", e);
 				authenticated = false;
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 

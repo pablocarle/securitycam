@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.sgrvg.security.ServerConfigHolder;
 import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.rtp.server.RTPServerHandle;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
@@ -34,12 +35,16 @@ public class RtspClient implements RtspClientInitializer {
 	private EventLoopGroup workerGroup;
 	private URI uri;
 	private SimpleLogger logger;
+	private ServerConfigHolder serverConfig;
 	
 	@Inject
-	public RtspClient(SimpleLogger logger, @Named("default_worker_group") EventLoopGroup workerGroup) {
+	public RtspClient(SimpleLogger logger,
+			@Named("default_worker_group") EventLoopGroup workerGroup,
+			ServerConfigHolder serverConfig) {
 		super();
 		this.logger = logger;
 		this.workerGroup = workerGroup;
+		this.serverConfig = serverConfig;
 	}
 	
 	@Override
@@ -94,6 +99,7 @@ public class RtspClient implements RtspClientInitializer {
 				});
 				
 				ChannelFuture future = bootstrap.connect(uri.getHost(), uri.getPort()).sync();
+				
 				future.channel().closeFuture().addListener(closeFuture -> {
 					logger.info("Operation Complete: Channel closed");
 					if (!closeFuture.isSuccess()) {

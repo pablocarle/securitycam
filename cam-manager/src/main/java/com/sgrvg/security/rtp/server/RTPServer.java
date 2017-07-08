@@ -27,7 +27,6 @@ public class RTPServer implements RTPServerInitializer {
 	// Deps
 	private SimpleLogger logger;
 	private EventLoopGroup bossLoopGroup;
-	private RTPPacketHandler packetHandler;
 	private ServerConfigHolder serverConfig;
 	
 	// State
@@ -40,7 +39,6 @@ public class RTPServer implements RTPServerInitializer {
 			ServerConfigHolder serverConfig) {
 		super();
 		this.logger = logger;
-		this.packetHandler = packetHandler;
 		this.bossLoopGroup = bossLoopGroup;
 		this.serverConfig = serverConfig;
 	}
@@ -80,8 +78,7 @@ public class RTPServer implements RTPServerInitializer {
 				@Override
 				protected void initChannel(DatagramChannel ch) throws Exception {
 					logger.info("RTP Server Channel Init");
-					ch.pipeline().addLast(packetHandler);
-					logger.info("Added handler: {}", packetHandler);
+					ch.pipeline().addLast(new RTPPacketHandler(logger, serverConfig)); //TODO Darle el objeto del que pueda sacar la info de la conexion
 				}
 			});
 			

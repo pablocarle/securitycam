@@ -2,8 +2,8 @@ package com.sgrvg.security.rtsp.client;
 
 import java.net.URI;
 import java.util.Optional;
+import java.util.function.Function;
 
-import com.google.inject.Inject;
 import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.rtp.server.RTPServerDefinition;
 
@@ -37,8 +37,14 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	private URI uri;
 	private SimpleLogger logger;
 	private RTPServerDefinition rtpServer;
+	
+	private OptionsState optionsState;
+	private DescribeState describeState;
+	private SetupState setupState;
+	private PlayState playState;
+	
+	private Function<Void, Void> connectionCompleteFunction;
 
-	@Inject
 	public RtspHandshakeOperation(
 			SimpleLogger logger) {
 		super();
@@ -95,52 +101,36 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 
 		Optional<RtspHandshake> next = null;
 		switch (lastCommand.getRtspMethod().asciiName().toString().toUpperCase()) {
-		case OPTIONS: {
-			next = Optional.of(
-					new DescribeCommand(
-							ctx, 
-							new OptionsState(uri, lastCommand.getState().getSequence() + 1, response)
-							)
-					);
-			break;
-		}
-		case DESCRIBE: {
-			next = Optional.of(
-					prepareSetup(
-							ctx.channel(), 
-							response)
-					);
-			break;
-		}
-		case SETUP: {
-			next = Optional.of(
-					new PlayCommand(
-							ctx.channel(), 
-							new SetupState(uri, lastCommand.getState().getSequence() + 1, response)
-							)
-					);
-			break;
-		}
-		case PLAY: {
-			next = Optional.of(
-					new TeardownCommand(
-							ctx.channel(), 
-							new PlayState(
-									uri, 
-									lastCommand.getState().getSequence() + 1, 
-									response)
-							)
-					);
-			next = Optional.empty();
-			break;
-		}
-		case TEARDOWN: {
-			next = Optional.empty();
-			break;
-		}
-		default: {
-			throw new RtspHandshakeException("Unrecognized or unsupported rtsp method " + lastCommand.getRtspMethod().asciiName());
-		}
+			case OPTIONS: {
+				optionsState = new OptionsState(uri, lastCommand.getState().getSequence() + 1, response);
+				next = Optional.of(new DescribeCommand(ctx, optionsState));
+				break;
+			}
+			case DESCRIBE: {
+				next = Optional.of(prepareSetup(ctx.channel(), response));
+				break;
+			}
+			case SETUP: {
+				setupState = new SetupState(uri, lastCommand.getState().getSequence() + 1, response);
+				next = Optional.of(new PlayCommand(ctx.channel(), setupState));
+				break;
+			}
+			case PLAY: {
+				playState = new PlayState(uri, lastCommand.getState().getSequence() + 1, response);
+				next = Optional.of(new TeardownCommand(ctx.channel(), playState));
+				if (connectionCompleteFunction != null) {
+					connectionCompleteFunction.apply(null); // TODO Alguien que represente el estado de configuracion del server
+				}
+				next = Optional.empty();
+				break;
+			}
+			case TEARDOWN: {
+				next = Optional.empty();
+				break;
+			}
+			default: {
+				throw new RtspHandshakeException("Unrecognized or unsupported rtsp method " + lastCommand.getRtspMethod().asciiName());
+			}
 		}
 		if (next.isPresent()) {
 			final RtspHandshake nextCommand = next.get();
@@ -169,7 +159,8 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	 * @throws RtspHandshakeException 
 	 */
 	private RtspHandshake prepareSetup(Channel channel, HttpResponse response) throws RtspHandshakeException {
-		return new SetupCommand(channel, new DescribeState(uri, lastCommand.getState().getSequence() + 1, response), rtpServer.getPort());
+		describeState = new DescribeState(uri, lastCommand.getState().getSequence() + 1, response);
+		return new SetupCommand(channel, describeState, rtpServer.getPort());
 	}
 
 	public Integer currentSequence() {
