@@ -1,9 +1,14 @@
 package com.sgrvg.security.guice;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import com.sgrvg.security.CloudUploader;
+import com.sgrvg.security.DriveUploader;
 import com.sgrvg.security.LoggerService;
 import com.sgrvg.security.ServerConfigHolder;
 import com.sgrvg.security.ServerConfigHolderImpl;
@@ -15,6 +20,7 @@ import com.sgrvg.security.rtsp.client.RtspClientInitializer;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import net.spy.memcached.MemcachedClient;
 
 public class ApplicationModule extends AbstractModule {
 
@@ -24,14 +30,10 @@ public class ApplicationModule extends AbstractModule {
 		bind(RTPServerInitializer.class).to(RTPServer.class);
 		
 		bind(ServerConfigHolder.class).to(ServerConfigHolderImpl.class).asEagerSingleton();
+		bind(SimpleLogger.class).to(LoggerService.class).asEagerSingleton();
+		bind(CloudUploader.class).to(DriveUploader.class).asEagerSingleton();
 	}
 	
-	@Provides
-	@Singleton
-	public SimpleLogger getLogger() {
-		return new LoggerService();
-	}
-
 	@Provides
 	@Named("default_worker_group")
 	@Singleton
@@ -51,5 +53,11 @@ public class ApplicationModule extends AbstractModule {
 	@Singleton
 	public EventLoopGroup rtpServerBossLoopGroup() {
 		return new NioEventLoopGroup();
+	}
+	
+	@Provides
+	@Singleton
+	public MemcachedClient getMemcachedClient() throws IOException {
+		return new MemcachedClient(new InetSocketAddress(11211));
 	}
 }

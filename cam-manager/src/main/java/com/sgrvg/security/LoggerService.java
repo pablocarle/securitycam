@@ -5,9 +5,11 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringWriter;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
@@ -16,7 +18,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
@@ -26,6 +27,7 @@ import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
 import com.ning.http.client.ListenableFuture;
 import com.ning.http.client.Response;
+import com.sgrvg.security.util.URLUtil;
 
 /**
  * Tiene una cola, y en un thread aparte, va revisando cuando hay suficientes elementos de log para enviar (o cada determinado tiempo?)
@@ -37,8 +39,8 @@ public final class LoggerService implements SimpleLogger {
 
 	private static final String SERVER_LOG_URL = "https://sgrvg-carle.rhcloud.com/security/log";
 	private static final String SERVER_LOG_LOGIN_URL = "https://sgrvg-carle.rhcloud.com/j_spring_security_check";
-	private static final String USERNAME = "security";
-	private static final String PASSWORD = "security123";
+	private static final String USERNAME = "pcarle";
+	private static final String PASSWORD = "luis.m.p.d.R1";
 	private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
 
 	private static final String LOG_MARKER = "{}";
@@ -190,7 +192,7 @@ public final class LoggerService implements SimpleLogger {
 			message.append(" - ");
 			message.append(category);
 			message.append(": ");
-			message.append(this.message);
+			message.append(this.message + "\n");
 
 			if (e != null) {
 				StringWriter stringWriter = new StringWriter();
@@ -211,7 +213,6 @@ public final class LoggerService implements SimpleLogger {
 		{
 			AsyncHttpClientConfig cf = new AsyncHttpClientConfig.Builder()
 					.setUserAgent("SimpleLogger - CAM SECURITY")
-					.setConnectTimeout(2000)
 					.build();
 			http = new AsyncHttpClient(cf);
 		}
@@ -272,17 +273,22 @@ public final class LoggerService implements SimpleLogger {
 				Response response = http.preparePost(url)
 					.addHeader("Content-Type", "application/x-www-form-urlencoded")
 					.setFollowRedirects(false)	
-					.setRequestTimeout(1)
 					.execute()
-					.get(10, TimeUnit.MILLISECONDS);
-				if (isSuccess(response.getStatusCode())) {
-					LoggerService.this.warn("Success authenticate to remote service");
-					authenticated = true;
+					.get();
+				
+				String newLocation = response.getHeader("Location");
+				if (!Strings.isNullOrEmpty(newLocation)) {
+					List<String> queryParams = URLUtil.getQueryParameterNames(new URL(newLocation));
+					if (queryParams.contains("error")) {
+						LoggerService.this.info("Failed authentication. Wrong username/password");
+						authenticated = false;
+					} else {
+						authenticated = true;
+					}
 				} else {
-					LoggerService.this.warn("Failed to authenticate to remote service. Returned status code: {}", response.getStatusCode());
-					authenticated = false;
+					failedAuth(response, newLocation);
 				}
-			} catch (InterruptedException | ExecutionException | TimeoutException e) {
+			} catch (InterruptedException | ExecutionException e) {
 				LoggerService.this.error("Failed to authenticate to url: ", e);
 				authenticated = false;
 			} catch (Exception e) {
@@ -290,8 +296,9 @@ public final class LoggerService implements SimpleLogger {
 			}
 		}
 
-		private boolean isSuccess(int statusCode) {
-			return statusCode >= 200 && statusCode < 300;
+		private void failedAuth(Response response, String newLocation) {
+			LoggerService.this.warn("Failed to authenticate to remote service. Returned status code: {} and location {}", response.getStatusCode(), newLocation);
+			authenticated = false;
 		}
 	}
 }

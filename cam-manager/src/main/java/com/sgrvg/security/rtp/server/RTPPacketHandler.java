@@ -73,7 +73,6 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			return;
 		}
 		H264RtpPacket packet = new H264RtpPacket(content);
-		logger.info("Received packet: {}", packet);
 		
 		if (packet.isStart()) {
 			if (packets == null) {

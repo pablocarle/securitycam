@@ -1,9 +1,13 @@
 package com.sgrvg.security;
 
+import java.io.InputStream;
+
 public interface CloudUploader {
 
-	void upload();
+	void setBasePath(String basePath);
 	
-	void delete();
+	void upload(InputStream is);
+	
+	void delete(String fileName);
 	
 }

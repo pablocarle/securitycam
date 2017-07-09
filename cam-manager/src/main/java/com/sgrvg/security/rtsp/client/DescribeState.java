@@ -15,7 +15,6 @@ import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.util.AsciiString;
 
 /**
- * TODO Deberia procesar SDP?
  * 
  * @author pabloc
  *

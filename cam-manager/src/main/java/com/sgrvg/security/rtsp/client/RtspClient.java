@@ -99,7 +99,7 @@ public class RtspClient implements RtspClientInitializer {
 				});
 				
 				ChannelFuture future = bootstrap.connect(uri.getHost(), uri.getPort()).sync();
-				
+				//TODO Actualizar la configuracion de servidores;
 				future.channel().closeFuture().addListener(closeFuture -> {
 					logger.info("Operation Complete: Channel closed");
 					if (!closeFuture.isSuccess()) {
