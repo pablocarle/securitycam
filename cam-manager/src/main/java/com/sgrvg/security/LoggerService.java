@@ -224,14 +224,21 @@ public final class LoggerService implements SimpleLogger {
 			authenticate();
 			while (!executor.isShutdown()) {
 				try {
+					LogEntry entry = null;
 					if (isAuthenticated()) {
-						sendData(entries.poll(10000, TimeUnit.MILLISECONDS));
+						entry = entries.poll(10000, TimeUnit.MILLISECONDS);
+						if (entry != null) {
+							sendData(entry);
+						}
 					} else {
 						long now = System.currentTimeMillis();
 						if (now - start > (60 * 1000)) {
 							authenticate();
 						}
-						System.out.println(entries.poll(2000, TimeUnit.MILLISECONDS));
+						entry = entries.poll(2000, TimeUnit.MILLISECONDS);
+						if (entry != null) {
+							System.out.println(entry);
+						}
 					}
 				} catch (InterruptedException e) {
 					System.err.println("Interrupted");

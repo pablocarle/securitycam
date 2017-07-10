@@ -6,6 +6,8 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.sgrvg.security.ServerConfigHolder;
 import com.sgrvg.security.SimpleLogger;
+import com.sgrvg.security.VideoKeeper;
+import com.sgrvg.security.h264.FrameBuilder;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 
 import io.netty.bootstrap.Bootstrap;
@@ -28,6 +30,8 @@ public class RTPServer implements RTPServerInitializer {
 	private SimpleLogger logger;
 	private EventLoopGroup bossLoopGroup;
 	private ServerConfigHolder serverConfig;
+	private FrameBuilder frameBuilder;
+	private VideoKeeper videoKeeper;
 	
 	// State
 	private RTPServerTask task;
@@ -36,11 +40,15 @@ public class RTPServer implements RTPServerInitializer {
 	public RTPServer(SimpleLogger logger, 
 			@Named("rtp_server_boss") EventLoopGroup bossLoopGroup,
 			RTPPacketHandler packetHandler,
-			ServerConfigHolder serverConfig) {
+			ServerConfigHolder serverConfig,
+			FrameBuilder frameBuilder,
+			VideoKeeper videoKeeper) {
 		super();
 		this.logger = logger;
 		this.bossLoopGroup = bossLoopGroup;
 		this.serverConfig = serverConfig;
+		this.frameBuilder = frameBuilder;
+		this.videoKeeper = videoKeeper;
 	}
 	
 	@Override
@@ -78,7 +86,7 @@ public class RTPServer implements RTPServerInitializer {
 				@Override
 				protected void initChannel(DatagramChannel ch) throws Exception {
 					logger.info("RTP Server Channel Init");
-					ch.pipeline().addLast(new RTPPacketHandler(logger, serverConfig)); //TODO Darle el objeto del que pueda sacar la info de la conexion
+					ch.pipeline().addLast(new RTPPacketHandler(logger, frameBuilder, serverConfig, videoKeeper)); //TODO Darle el objeto del que pueda sacar la info de la conexion
 				}
 			});
 			

@@ -1,70 +1,70 @@
 package com.sgrvg.security.rtp.server;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Base64;
-import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import com.google.inject.Inject;
 import com.sgrvg.security.ServerConfigHolder;
 import com.sgrvg.security.SimpleLogger;
+import com.sgrvg.security.VideoKeeper;
+import com.sgrvg.security.h264.FrameBuilder;
 import com.sgrvg.security.h264.H264RtpPacket;
 import com.sgrvg.security.rtp.RtpPacket;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 
+/**
+ * Collector of RTP Packets, re-builds h264 frames and sends to persistance
+ * 
+ * @author pabloc
+ *
+ */
 public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 
+	private static final int MAX_PACKET = 768 * 1024; // Tamaño de los bloques.
+	
 	private SimpleLogger logger;
-	
+	private FrameBuilder frameBuilder;
+	private ServerConfigHolder serverConfig;
+	private VideoKeeper videoKeeper;
+
 	private SortedSet<H264RtpPacket> packets = new TreeSet<>();
-	
-	private byte[] sps = Base64.getDecoder().decode("Z2RAKawsqAoC/5U=");
+
+	private byte[] sps = Base64.getDecoder().decode("Z2RAKawsqAoC/5U="); //TODO Esto debe obtenerse de la configuration del server RTSP
 	private byte[] pps = Base64.getDecoder().decode("aO44gA==");
+
+	private ByteBuf video;
+	private boolean firstPacket = false;
+	
+	private long startTimestamp;
+	private long endTimestamp;
 	
 	@Inject
 	public RTPPacketHandler(SimpleLogger logger,
-							ServerConfigHolder serverConfig) {
+			FrameBuilder frameBuilder,
+			ServerConfigHolder serverConfig,
+			VideoKeeper videoKeeper) {
 		super();
 		this.logger = logger;
+		this.frameBuilder = frameBuilder;
+		this.serverConfig = serverConfig;
+		this.videoKeeper = videoKeeper;
 		logger.info("Constructed RTPPacketHandler");
-		writeFileHeader();
-	}
-	
-	private void writeFileHeader() {
-		byte[] headers = new byte[6 + sps.length + pps.length];
-		
-		headers[0] = 0x00;
-		headers[1] = 0x00;
-		headers[2] = 0x01;
-		int i = 3;
-		for (int j = 0; i < headers.length && j < sps.length; i++, j++) {
-			headers[i] = sps[j];
-		}
-		headers[i++] = 0x00;
-		headers[i++] = 0x00;
-		headers[i++] = 0x01;
-		for (int j = 0; i < headers.length && j < pps.length; i++, j++) {
-			headers[i] = pps[j];
-		}
-		
-		try {
-			Files.write(Paths.get(new URI("file:///home/pabloc/test.264")), headers, StandardOpenOption.CREATE);
-		} catch (IOException | URISyntaxException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
+	private void newH264Header() {
+		video = Unpooled.wrappedBuffer(new byte[MAX_PACKET]);
+		video.writeBytes(new byte[] {0x00,0x00,0x01});
+		video.writeBytes(sps);
+		video.writeBytes(new byte[] {0x00,0x00,0x01});
+		video.writeBytes(pps);
+	}
+	
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
 		ByteBuf content = msg.content();
@@ -73,7 +73,10 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			return;
 		}
 		H264RtpPacket packet = new H264RtpPacket(content);
-		
+		doProcessPacket(packet);
+	}
+
+	private void doProcessPacket(H264RtpPacket packet) {
 		if (packet.isStart()) {
 			if (packets == null) {
 				packets = new TreeSet<>();
@@ -83,42 +86,22 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			packets = new TreeSet<>();
 			packets.add(packet);
 		} else if (packet.isEnd()) {
-			try {
-				packets.add(packet);
-				byte[] frame = buildFrame();
-				logger.info("Write frame of length: {}", frame.length);
-				Files.write(Paths.get(new URI("file:///home/pabloc/test.264")), frame, StandardOpenOption.APPEND);
-			} catch (Exception e) {
-				logger.error("Failed building", e);
+			packets.add(packet);
+			byte[] frame = frameBuilder.buildFrame(packets);
+			if (video.writableBytes() >= frame.length) {
+				video.writeBytes(frame);
+				if (firstPacket) {
+					firstPacket = false;
+					startTimestamp = System.currentTimeMillis();
+				}
+			} else {
+				newH264Header();
+				firstPacket = true;
+				endTimestamp = System.currentTimeMillis();
+				videoKeeper.keep(startTimestamp, endTimestamp, video);
 			}
 		} else {
 			packets.add(packet);
 		}
-	}
-
-	private byte[] buildFrame() {
-		byte[] frame = new byte[3 + packets.stream().mapToInt(packet -> packet.getVideoDataSize()).sum()];
-		frame[0] = 0x00;
-		frame[1] = 0x00;
-		frame[2] = 0x01;
-
-		int i = 3;
-		int j = 0;
-		
-		int videoSize = 0;
-		byte[] fragment = null;
-		
-		H264RtpPacket current = null;
-		
-		Iterator<H264RtpPacket> it = packets.iterator();
-		while (it.hasNext()) {
-			current = it.next();
-			fragment = current.getVideoData();
-			videoSize = fragment.length;
-			for (j = 0; i < frame.length && j < videoSize; i++, j++) {
-				frame[i] = fragment[j];
-			}
-		}
-		return frame;
 	}
 }

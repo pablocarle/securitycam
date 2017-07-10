@@ -13,6 +13,8 @@ import com.sgrvg.security.LoggerService;
 import com.sgrvg.security.ServerConfigHolder;
 import com.sgrvg.security.ServerConfigHolderImpl;
 import com.sgrvg.security.SimpleLogger;
+import com.sgrvg.security.h264.FrameBuilder;
+import com.sgrvg.security.h264.H264FU_AFrameBuilder;
 import com.sgrvg.security.rtp.server.RTPServer;
 import com.sgrvg.security.rtp.server.RTPServerInitializer;
 import com.sgrvg.security.rtsp.client.RtspClient;
@@ -32,6 +34,8 @@ public class ApplicationModule extends AbstractModule {
 		bind(ServerConfigHolder.class).to(ServerConfigHolderImpl.class).asEagerSingleton();
 		bind(SimpleLogger.class).to(LoggerService.class).asEagerSingleton();
 		bind(CloudUploader.class).to(DriveUploader.class).asEagerSingleton();
+		
+		bind(FrameBuilder.class).to(H264FU_AFrameBuilder.class).asEagerSingleton();
 	}
 	
 	@Provides
