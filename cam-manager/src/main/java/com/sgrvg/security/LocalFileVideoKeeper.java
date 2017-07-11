@@ -12,7 +12,10 @@ import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.inject.Inject;
 
@@ -68,6 +71,7 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 
 	@Override
 	protected void doCleanup(Date lastCleanup) {
+		// TODO Calcular
 		if (lastCleanup == null) {
 			
 		} else {
@@ -76,6 +80,25 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 	}
 	
 	private void doCleanup(Instant from, Instant to) {
-		
+		try (Stream<Path> paths = Files.find(Paths.get(new URI("file://" + basePath)), 2, 
+					(path, attrs) -> {
+						Instant creationTime = attrs.creationTime().toInstant();
+						return String.valueOf(path).endsWith(".264") && creationTime.isAfter(from) && creationTime.isBefore(to);
+					})) {
+			List<Boolean> results = paths.filter(path -> !Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS))
+				.flatMap(file -> {
+					try {
+						return Stream.of(Boolean.valueOf(Files.deleteIfExists(file)));
+					} catch (IOException e) {
+						logger.warn("Failed to delete file {}", e, file);
+						return Stream.of(false);
+					}
+				}).collect(Collectors.toList());
+				
+			logger.info("{} Files successfully deleted", results.stream().mapToInt(result -> result ? 1 : 0).sum());
+			logger.info("{} Files failed to delete", results.stream().mapToInt(result -> result ? 0 : 1).sum());
+		} catch (IOException | URISyntaxException e) {
+			logger.error("Failed to delete files in period between {} and {}", e, from, to);
+		}
 	}
 }
