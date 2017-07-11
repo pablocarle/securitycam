@@ -85,15 +85,17 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 						Instant creationTime = attrs.creationTime().toInstant();
 						return String.valueOf(path).endsWith(".264") && creationTime.isAfter(from) && creationTime.isBefore(to);
 					})) {
-			List<Boolean> results = paths.filter(path -> !Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS))
-				.flatMap(file -> {
-					try {
-						return Stream.of(Boolean.valueOf(Files.deleteIfExists(file)));
-					} catch (IOException e) {
-						logger.warn("Failed to delete file {}", e, file);
-						return Stream.of(false);
-					}
-				}).collect(Collectors.toList());
+			List<Boolean> results = paths
+					.filter(path -> !Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS))
+					.flatMap(file -> {
+						try {
+							return Stream.of(Boolean.valueOf(Files.deleteIfExists(file)));
+						} catch (IOException e) {
+							logger.warn("Failed to delete file {}", e, file);
+							return Stream.of(false);
+						}
+					})
+					.collect(Collectors.toList());
 				
 			logger.info("{} Files successfully deleted", results.stream().mapToInt(result -> result ? 1 : 0).sum());
 			logger.info("{} Files failed to delete", results.stream().mapToInt(result -> result ? 0 : 1).sum());
