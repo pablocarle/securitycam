@@ -2,6 +2,8 @@ package com.sgrvg.security;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.time.Instant;
+import java.util.Date;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.ByteArrayContent;
@@ -31,12 +33,24 @@ public class DriveVideoKeeper extends AbstractVideoKeeper {
 			
 			drive.files().create(null, new ByteArrayContent(null, data));
 			
+			data = null;
+			
 		} catch (GeneralSecurityException | IOException e) {
-			logger.error("Failed to initialize Drive object", e);
+			logger.error("Failed to initialize Drive object for key {}. Data size lost: {} bytes", e, key, data.length);
 		}
 	}
 	
 	private boolean isAuthenticated() {
 		return false;
+	}
+
+	@Override
+	protected void doCleanup(Date lastCleanup) {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	private void doCleanup(Instant from, Instant to) {
+		
 	}
 }

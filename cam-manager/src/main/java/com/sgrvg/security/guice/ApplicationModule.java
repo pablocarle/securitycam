@@ -7,12 +7,12 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.sgrvg.security.CloudUploader;
-import com.sgrvg.security.DriveUploader;
+import com.sgrvg.security.DriveVideoKeeper;
 import com.sgrvg.security.LoggerService;
 import com.sgrvg.security.ServerConfigHolder;
 import com.sgrvg.security.ServerConfigHolderImpl;
 import com.sgrvg.security.SimpleLogger;
+import com.sgrvg.security.VideoKeeper;
 import com.sgrvg.security.h264.FrameBuilder;
 import com.sgrvg.security.h264.H264FU_AFrameBuilder;
 import com.sgrvg.security.rtp.server.RTPServer;
@@ -33,7 +33,8 @@ public class ApplicationModule extends AbstractModule {
 		
 		bind(ServerConfigHolder.class).to(ServerConfigHolderImpl.class).asEagerSingleton();
 		bind(SimpleLogger.class).to(LoggerService.class).asEagerSingleton();
-		bind(CloudUploader.class).to(DriveUploader.class).asEagerSingleton();
+		
+		bind(VideoKeeper.class).to(DriveVideoKeeper.class).asEagerSingleton();
 		
 		bind(FrameBuilder.class).to(H264FU_AFrameBuilder.class).asEagerSingleton();
 	}

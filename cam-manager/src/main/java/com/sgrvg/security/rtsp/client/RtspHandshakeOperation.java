@@ -22,7 +22,7 @@ import io.netty.util.CharsetUtil;
 public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObject> {
 
 	/*
-	 * Spported rtsp methods
+	 * Supported rtsp methods
 	 * */
 	public static final String OPTIONS = "OPTIONS";
 	public static final String DESCRIBE = "DESCRIBE";

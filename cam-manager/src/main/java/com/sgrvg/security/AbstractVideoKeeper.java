@@ -1,6 +1,9 @@
 package com.sgrvg.security;
 
 import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -17,6 +20,8 @@ import net.spy.memcached.MemcachedClient;
 public abstract class AbstractVideoKeeper implements VideoKeeper {
 
 	protected static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd_hhmmss");
+	
+	protected static final String KEY_LAST_CLEANUP = "last_cleanup";
 	
 	protected SimpleLogger logger;
 	
@@ -39,6 +44,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			String endTime = SDF.format(new Date(endTimestamp));
 			String key = startTime + "-" + endTime;
 			memcachedClient.set(key, 3600 * 3, video.array());
+			video = null;
 			executor.submit(new VideoKeepTask(key));
 		} else {
 			throw new RuntimeException("Expected video to be backed by a byte array");
@@ -46,7 +52,15 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	}
 	
 	protected abstract void doKeep(String key, byte[] data);
+	
+	protected abstract void doCleanup(Date lastCleanup);
 
+	/**
+	 * Runnable to do keeping and cleanup task
+	 * 
+	 * @author pabloc
+	 *
+	 */
 	private class VideoKeepTask implements Runnable {
 
 		private String key;
@@ -59,8 +73,22 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 		@Override
 		public void run() {
 			byte[] data = (byte[]) memcachedClient.get(key);
+			memcachedClient.delete(key);
 			if (data != null && data.length > 0) {
 				doKeep(key, data);
+			}
+			data = null;
+			Date lastCleanup = (Date) memcachedClient.get(KEY_LAST_CLEANUP);
+			if (lastCleanup != null) {
+				long days = ChronoUnit.DAYS.between(ZonedDateTime.ofInstant(lastCleanup.toInstant(), ZoneId.systemDefault()), 
+						ZonedDateTime.now());
+				if (days >= 1) {
+					doCleanup(lastCleanup);
+					memcachedClient.replace(KEY_LAST_CLEANUP, 3600 * 24 * 2, new Date());
+				}
+			} else {
+				doCleanup(lastCleanup);
+				memcachedClient.set(KEY_LAST_CLEANUP, 3600 * 24 * 2, new Date());
 			}
 		}
 	}

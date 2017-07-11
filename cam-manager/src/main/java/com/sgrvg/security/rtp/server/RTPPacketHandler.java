@@ -98,7 +98,9 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 				newH264Header();
 				firstPacket = true;
 				endTimestamp = System.currentTimeMillis();
-				videoKeeper.keep(startTimestamp, endTimestamp, video);
+				ByteBuf videoBuffer = video.readBytes(video.readableBytes());
+				video = null;
+				videoKeeper.keep(startTimestamp, endTimestamp, videoBuffer);
 			}
 		} else {
 			packets.add(packet);

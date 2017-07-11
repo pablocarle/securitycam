@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Properties;
 
@@ -24,8 +25,6 @@ import net.spy.memcached.MemcachedClient;
  *
  */
 public class LocalFileVideoKeeper extends AbstractVideoKeeper {
-
-	private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd");
 	
 	private final String basePath;
 	{
@@ -52,6 +51,7 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 
 	@Override
 	protected void doKeep(String key, byte[] data) {
+		final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd");
 		try {
 			final String path = "file://" + basePath + "/" + SDF.format(new Date());
 			final String filePath = path + "/" + key + ".264";
@@ -62,7 +62,20 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 			}
 			Files.write(Paths.get(new URI("file://" + filePath)), data, StandardOpenOption.CREATE);
 		} catch (IOException | URISyntaxException e) {
-			logger.error("Failed to save local file", e);
+			logger.error("Failed to save local file with key {}. Data size lost: {} bytes", e, key, data.length);
 		}
+	}
+
+	@Override
+	protected void doCleanup(Date lastCleanup) {
+		if (lastCleanup == null) {
+			
+		} else {
+			
+		}
+	}
+	
+	private void doCleanup(Instant from, Instant to) {
+		
 	}
 }
