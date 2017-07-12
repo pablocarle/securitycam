@@ -31,7 +31,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	private MemcachedClient memcachedClient;
 	private ExecutorService executor;
 	
-	private volatile Boolean lock = Boolean.FALSE;
+	private volatile boolean lock = false;
 	
 	@Inject
 	public AbstractVideoKeeper(MemcachedClient memcachedClient,
@@ -85,20 +85,16 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				logger.info("Keeping of file with {} keeper took {} seconds", getID(), ChronoUnit.SECONDS.between(begin, Instant.now()));
 			}
 			data = null;
-			Date lastCleanup = null;
-			try {
-				lastCleanup = (Date) memcachedClient.get(KEY_LAST_CLEANUP);
-			} catch (Exception e) {
-				logger.error("Failed getting last cleanup key from memcached client", e);
-			}
 			if (!lock) {
-				synchronized(lock) {
-					if (!lock) {
-						lock = Boolean.TRUE;
-						checkDateAndCleanup(lastCleanup);
-						lock = Boolean.FALSE;
-					}
+				lock = true;
+				Date lastCleanup = null;
+				try {
+					lastCleanup = (Date) memcachedClient.get(KEY_LAST_CLEANUP);
+				} catch (Exception e) {
+					logger.error("Failed getting last cleanup key from memcached client", e);
 				}
+				checkDateAndCleanup(lastCleanup);
+				lock = false;
 			}
 		}
 

@@ -140,7 +140,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 				return Optional.empty();
 			}
 		} catch (IOException e) {
-			return Optional.empty();
+			throw new DriveException(e);
 		}
 	}
 	
