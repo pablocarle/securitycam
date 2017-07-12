@@ -4,6 +4,12 @@ import java.util.Date;
 
 import net.spy.memcached.MemcachedClient;
 
+/**
+ * Implements Dropbox API to upload files
+ * 
+ * @author pabloc
+ *
+ */
 public class DropboxVideoKeeper extends AbstractVideoKeeper {
 
 	public DropboxVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger) {
@@ -17,6 +23,11 @@ public class DropboxVideoKeeper extends AbstractVideoKeeper {
 
 	@Override
 	protected void doCleanup(Date lastCleanup) {
+		throw new RuntimeException("Not implemented");
+	}
+
+	@Override
+	public String getID() {
 		throw new RuntimeException("Not implemented");
 	}
 }

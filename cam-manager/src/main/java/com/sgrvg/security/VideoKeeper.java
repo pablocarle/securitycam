@@ -5,5 +5,7 @@ import io.netty.buffer.ByteBuf;
 public interface VideoKeeper {
 
 	void keep(long startTimestamp, long endTimestamp, ByteBuf video);
+	
+	String getID();
 
 }

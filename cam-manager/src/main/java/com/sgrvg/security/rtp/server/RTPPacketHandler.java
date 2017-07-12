@@ -100,6 +100,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 				endTimestamp = System.currentTimeMillis();
 				ByteBuf videoBuffer = video.readBytes(video.readableBytes());
 				video = null;
+				videoBuffer = null;
 				videoKeeper.keep(startTimestamp, endTimestamp, videoBuffer);
 			}
 		} else {

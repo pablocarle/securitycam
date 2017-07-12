@@ -172,7 +172,6 @@ public final class LoggerService implements SimpleLogger {
 			return message;
 		}
 
-		@SuppressWarnings("unused")
 		public String getCategory() {
 			return category;
 		}
@@ -234,6 +233,7 @@ public final class LoggerService implements SimpleLogger {
 						long now = System.currentTimeMillis();
 						if (now - start > (60 * 1000)) {
 							authenticate();
+							start = System.currentTimeMillis();
 						}
 						entry = entries.poll(2000, TimeUnit.MILLISECONDS);
 						if (entry != null) {
@@ -265,6 +265,7 @@ public final class LoggerService implements SimpleLogger {
 		private ListenableFuture<Response> sendData(LogEntry logEntry) {
 			JsonObject message = new JsonObject();
 			message.addProperty("message", logEntry.getFullMessage());
+			message.addProperty("category", logEntry.getCategory());
 			return http.preparePost(SERVER_LOG_URL)
 				.addHeader("Content-Type", "application/json")
 				.setBody(GSON.toJson(message))

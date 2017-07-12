@@ -1,6 +1,7 @@
 package com.sgrvg.security;
 
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -14,6 +15,8 @@ import io.netty.buffer.ByteBuf;
 import net.spy.memcached.MemcachedClient;
 
 /**
+ * Implements concurrency logic
+ * 
  * @author pabloc
  *
  */
@@ -27,6 +30,8 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	
 	private MemcachedClient memcachedClient;
 	private ExecutorService executor;
+	
+	private volatile Boolean lock = Boolean.FALSE;
 	
 	@Inject
 	public AbstractVideoKeeper(MemcachedClient memcachedClient,
@@ -54,7 +59,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	protected abstract void doKeep(String key, byte[] data);
 	
 	protected abstract void doCleanup(Date lastCleanup);
-
+	
 	/**
 	 * Runnable to do keeping and cleanup task
 	 * 
@@ -75,20 +80,42 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			byte[] data = (byte[]) memcachedClient.get(key);
 			memcachedClient.delete(key);
 			if (data != null && data.length > 0) {
+				Instant begin = Instant.now();
 				doKeep(key, data);
+				logger.info("Keeping of file with {} keeper took {} seconds", getID(), ChronoUnit.SECONDS.between(begin, Instant.now()));
 			}
 			data = null;
-			Date lastCleanup = (Date) memcachedClient.get(KEY_LAST_CLEANUP);
+			Date lastCleanup = null;
+			try {
+				lastCleanup = (Date) memcachedClient.get(KEY_LAST_CLEANUP);
+			} catch (Exception e) {
+				logger.error("Failed getting last cleanup key from memcached client", e);
+			}
+			if (!lock) {
+				synchronized(lock) {
+					if (!lock) {
+						lock = Boolean.TRUE;
+						checkDateAndCleanup(lastCleanup);
+						lock = Boolean.FALSE;
+					}
+				}
+			}
+		}
+
+		private void checkDateAndCleanup(Date lastCleanup) {
+			Instant begin = Instant.now();
 			if (lastCleanup != null) {
 				long days = ChronoUnit.DAYS.between(ZonedDateTime.ofInstant(lastCleanup.toInstant(), ZoneId.systemDefault()), 
 						ZonedDateTime.now());
 				if (days >= 1) {
 					doCleanup(lastCleanup);
 					memcachedClient.replace(KEY_LAST_CLEANUP, 3600 * 24 * 2, new Date());
+					logger.info("Cleanup with {} keeper took {} seconds", getID(), ChronoUnit.SECONDS.between(begin, Instant.now()));
 				}
 			} else {
 				doCleanup(lastCleanup);
 				memcachedClient.set(KEY_LAST_CLEANUP, 3600 * 24 * 2, new Date());
+				logger.info("Cleanup with {} keeper took {} seconds", getID(), ChronoUnit.SECONDS.between(begin, Instant.now()));
 			}
 		}
 	}

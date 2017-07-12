@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.Period;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -30,6 +31,7 @@ import net.spy.memcached.MemcachedClient;
 public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 	
 	private final String basePath;
+	private final int backupDays;
 	{
 		Properties props = new Properties();
 		InputStream is = getClass().getClassLoader().getResourceAsStream("general.properties");
@@ -45,6 +47,7 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 			}
 		}
 		basePath = props.getProperty("videos_base_path", "/home/alarm");
+		backupDays = Integer.valueOf(props.getProperty("local_backup_days", "5"));
 	}
 
 	@Inject
@@ -59,11 +62,12 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 			final String path = "file://" + basePath + "/" + SDF.format(new Date());
 			final String filePath = path + "/" + key + ".264";
 			Path directory = Paths.get(new URI(path));
-			if (!Files.exists(directory, LinkOption.NOFOLLOW_LINKS)) {
+			if (Files.notExists(directory, LinkOption.NOFOLLOW_LINKS)) {
 				Files.createDirectory(directory);
 				logger.info("Created directory {}", directory);
 			}
 			Files.write(Paths.get(new URI("file://" + filePath)), data, StandardOpenOption.CREATE);
+			data = null;
 		} catch (IOException | URISyntaxException e) {
 			logger.error("Failed to save local file with key {}. Data size lost: {} bytes", e, key, data.length);
 		}
@@ -71,12 +75,9 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 
 	@Override
 	protected void doCleanup(Date lastCleanup) {
-		// TODO Calcular
-		if (lastCleanup == null) {
-			
-		} else {
-			
-		}
+		Instant from = Instant.now().minus(Period.ofDays(30));
+		Instant to = Instant.now().minus(Period.ofDays(backupDays));
+		doCleanup(from, to);
 	}
 	
 	private void doCleanup(Instant from, Instant to) {
@@ -102,5 +103,10 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 		} catch (IOException | URISyntaxException e) {
 			logger.error("Failed to delete files in period between {} and {}", e, from, to);
 		}
+	}
+
+	@Override
+	public String getID() {
+		return this.getClass().getSimpleName();
 	}
 }
