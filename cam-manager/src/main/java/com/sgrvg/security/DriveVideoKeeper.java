@@ -105,6 +105,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 		}
 		if (drive == null) {
 			logger.warn("DRIVE SERVICE IS NOT INITIALIZED");
+			return;
 		}
 		try {
 			File folder = findTodaysFolder().map(file -> file).orElseGet(this::createTodayFolder);
