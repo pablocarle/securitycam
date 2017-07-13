@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.io.StringWriter;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -27,6 +28,7 @@ import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
 import com.ning.http.client.ListenableFuture;
 import com.ning.http.client.Response;
+import com.ning.http.client.cookie.Cookie;
 import com.sgrvg.security.util.URLUtil;
 
 /**
@@ -37,7 +39,7 @@ import com.sgrvg.security.util.URLUtil;
  */
 public final class LoggerService implements SimpleLogger {
 
-	private static final String SERVER_LOG_URL = "https://sgrvg-carle.rhcloud.com/security/log";
+	private static final String SERVER_LOG_URL = "https://sgrvg-carle.rhcloud.com/service/logging";
 	private static final String SERVER_LOG_LOGIN_URL = "https://sgrvg-carle.rhcloud.com/j_spring_security_check";
 	private static final String USERNAME = "pcarle";
 	private static final String PASSWORD = "luis.m.p.d.R1";
@@ -208,6 +210,7 @@ public final class LoggerService implements SimpleLogger {
 
 		private AsyncHttpClient http;
 		private boolean authenticated = false;
+		private List<Cookie> cookies = new ArrayList<>();
 
 		{
 			AsyncHttpClientConfig cf = new AsyncHttpClientConfig.Builder()
@@ -228,6 +231,7 @@ public final class LoggerService implements SimpleLogger {
 						entry = entries.poll(10000, TimeUnit.MILLISECONDS);
 						if (entry != null) {
 							sendData(entry);
+							System.out.println(entry);
 						}
 					} else {
 						long now = System.currentTimeMillis();
@@ -271,6 +275,7 @@ public final class LoggerService implements SimpleLogger {
 				.setBody(GSON.toJson(message))
 				.setBodyEncoding("UTF-8")
 				.setFollowRedirects(false)
+				.setCookies(cookies)
 				.execute();
 		}
 
@@ -291,7 +296,9 @@ public final class LoggerService implements SimpleLogger {
 						LoggerService.this.info("Failed authentication. Wrong username/password");
 						authenticated = false;
 					} else {
+						System.out.println("Successfully authenticated");
 						authenticated = true;
+						cookies.addAll(response.getCookies());
 					}
 				} else {
 					failedAuth(response, newLocation);

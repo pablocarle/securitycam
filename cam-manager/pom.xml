@@ -59,6 +59,9 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.6.1</version>
 				<configuration>
+					<compilerArguments>
+						<profile>compact1</profile>
+					</compilerArguments>
 					<source>${jdk.version}</source>
 					<target>${jdk.version}</target>
 				</configuration>

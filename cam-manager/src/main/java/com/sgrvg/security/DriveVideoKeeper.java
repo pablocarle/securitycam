@@ -73,10 +73,11 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 						new ByteArrayInputStream(
 								Files.readAllBytes(Paths.get(new URI("file://" + keyLocation))
 										)
-								)
+								), GoogleNetHttpTransport.newTrustedTransport(),
+						new GsonFactory()
 						);
 			}
-		} catch (IOException | URISyntaxException e) {
+		} catch (IOException | URISyntaxException | GeneralSecurityException e) {
 			logger.error("Failed to initialize google credentials", e);
 		}
 	}
