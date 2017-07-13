@@ -42,7 +42,6 @@ public final class LoggerService implements SimpleLogger {
 	private static final String SERVER_LOG_URL = "https://sgrvg-carle.rhcloud.com/service/logging";
 	private static final String SERVER_LOG_LOGIN_URL = "https://sgrvg-carle.rhcloud.com/j_spring_security_check";
 	private static final String USERNAME = "pcarle";
-	private static final String PASSWORD = "luis.m.p.d.R1";
 	private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
 
 	private static final String LOG_MARKER = "{}";
