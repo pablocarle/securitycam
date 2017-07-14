@@ -1,6 +1,7 @@
 package com.sgrvg.security.util;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.inject.Inject;
@@ -63,5 +64,23 @@ public class ServerConfigHolderImpl implements ServerConfigHolder {
 			this.rtspEndpoint = rtspEndpoint;
 		}
 		
+		boolean contains(Object o) {
+			if (o instanceof RTPPacketHandler) {
+				return handler != null && handler.equals(o);
+			}
+			if (o instanceof RtspServerDefinition) {
+				return rtspEndpoint != null && rtspEndpoint.equals(o);
+			}
+			return false;
+		}
+	}
+
+	@Override
+	public Optional<RtspServerDefinition> getRtspEndpoint(RTPPacketHandler rtpPacketHandler) {
+		return map.entrySet()
+				.stream()
+				.filter(entry -> entry.getValue().contains(rtpPacketHandler))
+				.map(entry -> entry.getValue().rtspEndpoint)
+				.findFirst();
 	}
 }

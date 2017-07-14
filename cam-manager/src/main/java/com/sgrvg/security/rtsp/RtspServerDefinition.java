@@ -4,6 +4,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Properties;
 
+/**
+ * Holds definition of a RTSP Server stream
+ * 
+ * @author pabloc
+ *
+ */
 public class RtspServerDefinition {
 
 	public enum KeepType {
@@ -19,6 +25,7 @@ public class RtspServerDefinition {
 	private int endHourSampling;
 	private String serverName;
 	private Properties props;
+	private SessionDescription sessionDescription;
 
 	public RtspServerDefinition(String serverName, Properties props) {
 		super();
@@ -31,7 +38,7 @@ public class RtspServerDefinition {
 		host = props.getProperty(serverName + "_ip");
 		port = Integer.valueOf(props.getProperty(serverName + "_port"));
 		endpoint = props.getProperty(serverName + "_path");
-		
+		//TODO Falta parsing
 	}
 
 	public String getHost() {
@@ -64,5 +71,12 @@ public class RtspServerDefinition {
 
 	public int getEndHourSampling() {
 		return endHourSampling;
+	}
+	
+	public class SessionDescription {
+		
+		private byte[] sps;
+		private byte[] pps;
+		
 	}
 }

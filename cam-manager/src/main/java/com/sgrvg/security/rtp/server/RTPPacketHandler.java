@@ -1,6 +1,7 @@
 package com.sgrvg.security.rtp.server;
 
 import java.util.Base64;
+import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -11,6 +12,7 @@ import com.sgrvg.security.VideoKeeper;
 import com.sgrvg.security.h264.FrameBuilder;
 import com.sgrvg.security.h264.H264RtpPacket;
 import com.sgrvg.security.rtp.RtpPacket;
+import com.sgrvg.security.rtsp.RtspServerDefinition;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -27,7 +29,7 @@ import io.netty.channel.socket.DatagramPacket;
 public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 
 	private static final int MAX_PACKET = 768 * 1024; // Tamaño de los bloques.
-	
+
 	private SimpleLogger logger;
 	private FrameBuilder frameBuilder;
 	private ServerConfigHolder serverConfig;
@@ -39,13 +41,13 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 
 	private ByteBuf video;
 	private boolean firstPacket = false;
-	
+
 	private long startTimestamp;
 	private long endTimestamp;
 
 	private VideoKeeper driveVideoKeeper;
 	private VideoKeeper localFileVideoKeeper;
-	
+
 	@Inject
 	public RTPPacketHandler(SimpleLogger logger,
 			FrameBuilder frameBuilder,
@@ -68,7 +70,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 		video.writeBytes(new byte[] {0x00,0x00,0x01});
 		video.writeBytes(pps);
 	}
-	
+
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
 		ByteBuf content = msg.content();
@@ -112,7 +114,34 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 		}
 	}
 
-	private void doKeepVideo(long startTimestamp2, long endTimestamp2, ByteBuf videoBuffer) {
-		videoKeeper.keep(startTimestamp, endTimestamp, videoBuffer);
+	private void doKeepVideo(long startTimestamp, long endTimestamp, ByteBuf videoBuffer) {
+		Optional<RtspServerDefinition> definition = serverConfig.getRtspEndpoint(this);
+		if (definition.isPresent()) {
+			VideoKeeper keeper = null;
+			switch (definition.get().getKeepType()) {
+			case CLOUD_DRIVE:
+				keeper = driveVideoKeeper;
+				break;
+			case LOCAL_FILE:
+				keeper = localFileVideoKeeper;
+				break;
+			case CLOUD_DROPBOX:
+			default:
+				throw new RuntimeException("Unrecognized option " + definition.get().getKeepType().name());
+			}
+			keeper.keep(startTimestamp, endTimestamp, videoBuffer);
+		} else {
+			throw new IllegalStateException("Could not find rtsp server definition bound to this handler");
+		}
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return this == obj;
+	}
+
+	@Override
+	public int hashCode() {
+		return super.hashCode();
 	}
 }
