@@ -14,7 +14,6 @@ import java.time.Period;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Locale;
@@ -26,6 +25,7 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
 import com.google.common.base.Strings;
@@ -77,6 +77,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 								), GoogleNetHttpTransport.newTrustedTransport(),
 						new GsonFactory()
 						);
+				credential = credential.createScoped(Collections.singleton(DriveScopes.DRIVE));
 			}
 		} catch (IOException | URISyntaxException | GeneralSecurityException e) {
 			logger.error("Failed to initialize google credentials", e);
@@ -113,9 +114,8 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 			File folder = findTodaysFolder().map(file -> file).orElseGet(this::createTodayFolder);
 			
 			File fileMetadata = new File();
-			fileMetadata.setFileExtension(".264");
-			fileMetadata.setName(key);
-			fileMetadata.setParents(Arrays.asList(MAIN_FOLDER_ID, folder.getId()));
+			fileMetadata.setName(key + ".264");
+			fileMetadata.setParents(Collections.singletonList(folder.getId()));
 			Drive.Files.Create createRequest = drive.files().create(fileMetadata , new ByteArrayContent("video/H264", data));
 			createRequest.getMediaHttpUploader().setProgressListener(listener -> {
 				logger.info("Progress for upload of file {} is {}", key);
