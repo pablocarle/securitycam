@@ -5,8 +5,10 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import com.google.inject.Inject;
+import com.sgrvg.security.ServerConfigHolder;
 import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.rtp.server.RTPServerDefinition;
+import com.sgrvg.security.rtsp.RtspServerDefinition;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -45,12 +47,15 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	private PlayState playState;
 	
 	private Function<Void, Void> connectionCompleteFunction;
+	private ServerConfigHolder serverConfig;
 
 	@Inject
 	public RtspHandshakeOperation(
-			SimpleLogger logger) {
+			SimpleLogger logger,
+			ServerConfigHolder serverConfig) {
 		super();
 		this.logger = logger;
+		this.serverConfig = serverConfig;
 	}
 
 	public void start(RTPServerDefinition rtpServerDefinition, Channel channel) throws Exception {
@@ -162,6 +167,13 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	 */
 	private RtspHandshake prepareSetup(Channel channel, HttpResponse response) throws RtspHandshakeException {
 		describeState = new DescribeState(uri, lastCommand.getState().getSequence() + 1, response);
+		Optional<RtspServerDefinition> rtspServer = serverConfig.getRtspEndpoint(rtpServer);
+		if (rtspServer.isPresent()) {
+			rtspServer.get().getSessionDescription().setPps(describeState.getPPS());
+			rtspServer.get().getSessionDescription().setSps(describeState.getSPS());
+		} else {
+			throw new RtspHandshakeException("Couldn't find bound rtsp endpoint definition");
+		}
 		return new SetupCommand(channel, describeState, rtpServer.getPort());
 	}
 

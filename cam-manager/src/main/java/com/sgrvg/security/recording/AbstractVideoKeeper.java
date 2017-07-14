@@ -79,8 +79,13 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 		
 		@Override
 		public void run() {
-			byte[] data = (byte[]) memcachedClient.get(key);
-			memcachedClient.delete(key);
+			byte[] data = null;
+			try {
+				data = (byte[]) memcachedClient.get(key);
+				memcachedClient.delete(key);
+			} catch (Exception e) {
+				logger.error("Failed getting key {} from memcached client", e, key);
+			}
 			if (data != null && data.length > 0) {
 				Instant begin = Instant.now();
 				doKeep(key, data);

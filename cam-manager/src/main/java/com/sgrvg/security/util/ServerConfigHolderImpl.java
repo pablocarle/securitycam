@@ -1,5 +1,6 @@
 package com.sgrvg.security.util;
 
+import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -7,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.google.inject.Inject;
 import com.sgrvg.security.ServerConfigHolder;
 import com.sgrvg.security.rtp.server.RTPPacketHandler;
+import com.sgrvg.security.rtp.server.RTPServerDefinition;
 import com.sgrvg.security.rtp.server.RTPServerHandle;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 
@@ -80,6 +82,21 @@ public class ServerConfigHolderImpl implements ServerConfigHolder {
 		return map.entrySet()
 				.stream()
 				.filter(entry -> entry.getValue().contains(rtpPacketHandler))
+				.map(entry -> entry.getValue().rtspEndpoint)
+				.findFirst();
+	}
+
+	@Override
+	public Optional<RtspServerDefinition> getRtspEndpoint(RTPServerDefinition rtpServer) {
+		return map.entrySet()
+				.stream()
+				.filter(entry -> {
+					try {
+						return entry.getKey().serverDefinition().equals(rtpServer);
+					} catch (URISyntaxException e) {
+						return false;
+					}
+				})
 				.map(entry -> entry.getValue().rtspEndpoint)
 				.findFirst();
 	}

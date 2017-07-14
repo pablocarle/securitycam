@@ -1,6 +1,5 @@
 package com.sgrvg.security.rtp.server;
 
-import java.util.Base64;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -36,8 +35,8 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 
 	private SortedSet<H264RtpPacket> packets = new TreeSet<>();
 
-	private byte[] sps = Base64.getDecoder().decode("Z2RAKawsqAoC/5U="); //TODO Esto debe obtenerse de la configuration del server RTSP
-	private byte[] pps = Base64.getDecoder().decode("aO44gA==");
+	private byte[] sps;
+	private byte[] pps;
 
 	private ByteBuf video;
 	private boolean firstPacket = false;
@@ -45,6 +44,8 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	private long startTimestamp;
 	private long endTimestamp;
 
+	private long lastPacketReceived = -1L;
+	
 	private VideoKeeper driveVideoKeeper;
 	private VideoKeeper localFileVideoKeeper;
 
@@ -65,6 +66,15 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 
 	private void newH264Header() {
 		video = Unpooled.wrappedBuffer(new byte[MAX_PACKET]);
+		if (sps == null && pps == null) {
+			Optional<RtspServerDefinition> rtspServer = serverConfig.getRtspEndpoint(this);
+			if (rtspServer.isPresent()) {
+				sps = rtspServer.get().getSessionDescription().getSps();
+				pps = rtspServer.get().getSessionDescription().getPps();
+			} else {
+				throw new RuntimeException("Couldn't find bound rtsp endpoint");
+			}
+		}
 		video.writeBytes(new byte[] {0x00,0x00,0x01});
 		video.writeBytes(sps);
 		video.writeBytes(new byte[] {0x00,0x00,0x01});
@@ -80,16 +90,17 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 		}
 		H264RtpPacket packet = new H264RtpPacket(content);
 		doProcessPacket(packet);
+		lastPacketReceived = System.currentTimeMillis();
 	}
 
 	private void doProcessPacket(H264RtpPacket packet) {
 		if (packet.isStart()) {
+			newH264Header();
 			if (packets == null) {
 				packets = new TreeSet<>();
 			} else {
 				packets.clear();
 			}
-			packets = new TreeSet<>();
 			packets.add(packet);
 		} else if (packet.isEnd()) {
 			packets.add(packet);
@@ -101,11 +112,9 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 					startTimestamp = System.currentTimeMillis();
 				}
 			} else {
-				newH264Header();
 				firstPacket = true;
 				endTimestamp = System.currentTimeMillis();
 				ByteBuf videoBuffer = video.readBytes(video.readableBytes());
-				video = null;
 				doKeepVideo(startTimestamp, endTimestamp, videoBuffer);
 				videoBuffer = null;
 			}
