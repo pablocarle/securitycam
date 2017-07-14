@@ -1,4 +1,4 @@
-package com.sgrvg.security;
+package com.sgrvg.security.util;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,7 +29,7 @@ import com.ning.http.client.AsyncHttpClientConfig;
 import com.ning.http.client.ListenableFuture;
 import com.ning.http.client.Response;
 import com.ning.http.client.cookie.Cookie;
-import com.sgrvg.security.util.URLUtil;
+import com.sgrvg.security.SimpleLogger;
 
 /**
  * Tiene una cola, y en un thread aparte, va revisando cuando hay suficientes elementos de log para enviar (o cada determinado tiempo?)
@@ -41,8 +41,8 @@ public final class LoggerService implements SimpleLogger {
 
 	private static final String SERVER_LOG_URL = "https://sgrvg-carle.rhcloud.com/service/logging";
 	private static final String SERVER_LOG_LOGIN_URL = "https://sgrvg-carle.rhcloud.com/j_spring_security_check";
-	private static final String USERNAME = "pcarle";
-	private static final String PASSWORD = "luis.m.p.d.R1";
+	private static final String USERNAME = System.getenv("LOG_USERNAME");
+	private static final String PASSWORD = System.getenv("LOG_PASSWORD");
 	private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
 
 	private static final String LOG_MARKER = "{}";
@@ -298,7 +298,7 @@ public final class LoggerService implements SimpleLogger {
 					} else {
 						System.out.println("Successfully authenticated");
 						authenticated = true;
-						cookies.addAll(response.getCookies());
+						cookies = response.getCookies();
 					}
 				} else {
 					failedAuth(response, newLocation);

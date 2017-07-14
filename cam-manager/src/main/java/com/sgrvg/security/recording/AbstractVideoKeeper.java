@@ -1,4 +1,4 @@
-package com.sgrvg.security;
+package com.sgrvg.security.recording;
 
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -10,6 +10,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.google.inject.Inject;
+import com.sgrvg.security.SimpleLogger;
+import com.sgrvg.security.VideoKeeper;
 
 import io.netty.buffer.ByteBuf;
 import net.spy.memcached.MemcachedClient;

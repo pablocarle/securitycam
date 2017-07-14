@@ -17,6 +17,12 @@ import com.sgrvg.security.rtsp.RtspServerDefinition;
 import com.sgrvg.security.rtsp.client.RtspClientHandle;
 import com.sgrvg.security.rtsp.client.RtspClientInitializer;
 
+/**
+ * Entry point
+ * 
+ * @author pabloc
+ *
+ */
 public class RtspClientMain {
 
 	private static SimpleLogger logger;
@@ -75,10 +81,7 @@ public class RtspClientMain {
 		servers = Arrays.stream(props.getProperty("server_names").split(","))
 			  .filter(x -> x != null && x.trim().length() > 0)
 		      .map(serverName -> {
-		    	  String host = props.getProperty(serverName + "_ip");
-		    	  int port = Integer.valueOf(props.getProperty(serverName + "_port"));
-		    	  String endpoint = props.getProperty(serverName + "_path");
-		    	  return new RtspServerDefinition(serverName, host, port, endpoint);
+		    	  return new RtspServerDefinition(serverName, props);
 		      }).collect(Collectors.toList());
 	}
 }

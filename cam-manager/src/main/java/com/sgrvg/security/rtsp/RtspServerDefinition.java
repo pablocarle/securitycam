@@ -2,20 +2,36 @@ package com.sgrvg.security.rtsp;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Properties;
 
 public class RtspServerDefinition {
-	
+
+	public enum KeepType {
+		CLOUD_DRIVE, CLOUD_DROPBOX, LOCAL_FILE;
+	}
+
 	private String host;
 	private int port;
 	private String endpoint;
 	private String name;
+	private KeepType keepType;
+	private int startHourSampling;
+	private int endHourSampling;
+	private String serverName;
+	private Properties props;
 
-	public RtspServerDefinition(String name, String host, int port, String endpoint) {
+	public RtspServerDefinition(String serverName, Properties props) {
 		super();
-		this.host = host;
-		this.port = port;
-		this.endpoint = endpoint;
-		this.name = name;
+		this.serverName = serverName;
+		this.props = props;
+		loadProps();
+	}
+
+	private void loadProps() {
+		host = props.getProperty(serverName + "_ip");
+		port = Integer.valueOf(props.getProperty(serverName + "_port"));
+		endpoint = props.getProperty(serverName + "_path");
+		
 	}
 
 	public String getHost() {
@@ -29,12 +45,24 @@ public class RtspServerDefinition {
 	public String getEndpoint() {
 		return endpoint;
 	}
-	
+
 	public String getName() {
 		return name;
 	}
 
 	public URI getURI() throws URISyntaxException {
 		return new URI("rtsp://" + host + ":" + port + endpoint);
+	}
+
+	public KeepType getKeepType() {
+		return keepType;
+	}
+
+	public int getStartHourSampling() {
+		return startHourSampling;
+	}
+
+	public int getEndHourSampling() {
+		return endHourSampling;
 	}
 }

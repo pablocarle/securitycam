@@ -1,6 +1,8 @@
-package com.sgrvg.security;
+package com.sgrvg.security.recording;
 
 import java.util.Date;
+
+import com.sgrvg.security.SimpleLogger;
 
 import net.spy.memcached.MemcachedClient;
 

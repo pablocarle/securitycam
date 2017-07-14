@@ -1,4 +1,4 @@
-package com.sgrvg.security;
+package com.sgrvg.security.recording;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.inject.Inject;
+import com.sgrvg.security.SimpleLogger;
 
 import net.spy.memcached.MemcachedClient;
 

@@ -5,7 +5,7 @@ import java.net.URISyntaxException;
 import com.sgrvg.security.rtp.server.RTPServer.RTPServerTask;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 
-public class RTPServerHandleImpl implements RTPServerHandle {
+public final class RTPServerHandleImpl implements RTPServerHandle {
 
 	private RTPServerTask rtpTask;
 	private RtspServerDefinition rtspServerDefinition;
@@ -42,5 +42,30 @@ public class RTPServerHandleImpl implements RTPServerHandle {
 	@Override
 	public String getID() {
 		return id;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		RTPServerHandleImpl other = (RTPServerHandleImpl) obj;
+		if (id == null) {
+			if (other.id != null)
+				return false;
+		} else if (!id.equals(other.id))
+			return false;
+		return true;
 	}
 }

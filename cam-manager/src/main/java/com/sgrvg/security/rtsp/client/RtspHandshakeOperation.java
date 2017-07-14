@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.Optional;
 import java.util.function.Function;
 
+import com.google.inject.Inject;
 import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.rtp.server.RTPServerDefinition;
 
@@ -45,6 +46,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	
 	private Function<Void, Void> connectionCompleteFunction;
 
+	@Inject
 	public RtspHandshakeOperation(
 			SimpleLogger logger) {
 		super();

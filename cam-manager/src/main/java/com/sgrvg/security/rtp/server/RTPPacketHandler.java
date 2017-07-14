@@ -31,7 +31,6 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	private SimpleLogger logger;
 	private FrameBuilder frameBuilder;
 	private ServerConfigHolder serverConfig;
-	private VideoKeeper videoKeeper;
 
 	private SortedSet<H264RtpPacket> packets = new TreeSet<>();
 
@@ -43,17 +42,22 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	
 	private long startTimestamp;
 	private long endTimestamp;
+
+	private VideoKeeper driveVideoKeeper;
+	private VideoKeeper localFileVideoKeeper;
 	
 	@Inject
 	public RTPPacketHandler(SimpleLogger logger,
 			FrameBuilder frameBuilder,
 			ServerConfigHolder serverConfig,
-			VideoKeeper videoKeeper) {
+			VideoKeeper driveVideoKeeper,
+			VideoKeeper localFileVideoKeeper) {
 		super();
 		this.logger = logger;
 		this.frameBuilder = frameBuilder;
 		this.serverConfig = serverConfig;
-		this.videoKeeper = videoKeeper;
+		this.driveVideoKeeper = driveVideoKeeper;
+		this.localFileVideoKeeper = localFileVideoKeeper;
 		logger.info("Constructed RTPPacketHandler");
 	}
 
@@ -100,11 +104,15 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 				endTimestamp = System.currentTimeMillis();
 				ByteBuf videoBuffer = video.readBytes(video.readableBytes());
 				video = null;
+				doKeepVideo(startTimestamp, endTimestamp, videoBuffer);
 				videoBuffer = null;
-				videoKeeper.keep(startTimestamp, endTimestamp, videoBuffer);
 			}
 		} else {
 			packets.add(packet);
 		}
+	}
+
+	private void doKeepVideo(long startTimestamp2, long endTimestamp2, ByteBuf videoBuffer) {
+		videoKeeper.keep(startTimestamp, endTimestamp, videoBuffer);
 	}
 }

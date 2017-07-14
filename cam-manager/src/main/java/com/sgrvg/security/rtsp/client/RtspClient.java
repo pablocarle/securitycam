@@ -36,15 +36,18 @@ public class RtspClient implements RtspClientInitializer {
 	private URI uri;
 	private SimpleLogger logger;
 	private ServerConfigHolder serverConfig;
+	private RtspHandshakeOperation operation;
 	
 	@Inject
 	public RtspClient(SimpleLogger logger,
 			@Named("default_worker_group") EventLoopGroup workerGroup,
-			ServerConfigHolder serverConfig) {
+			ServerConfigHolder serverConfig,
+			RtspHandshakeOperation operation) {
 		super();
 		this.logger = logger;
 		this.workerGroup = workerGroup;
 		this.serverConfig = serverConfig;
+		this.operation = operation;
 	}
 	
 	@Override
@@ -52,6 +55,7 @@ public class RtspClient implements RtspClientInitializer {
 		try {
 			this.uri = serverDefinition.getURI();
 			rtspTask = new RtspClientTask(rtpServer);
+			serverConfig.bind(rtpServer, serverDefinition);
 			Thread thread = new Thread(rtspTask);
 			thread.start();
 		} catch (URISyntaxException e1) {
@@ -69,13 +73,11 @@ public class RtspClient implements RtspClientInitializer {
 	 */
 	class RtspClientTask implements Runnable { 
 		
-		private RtspHandshakeOperation operation;
 		private Bootstrap bootstrap;
 		private RTPServerHandle rtpServer;
 
 		public RtspClientTask(RTPServerHandle rtpServer) {
 			super();
-			this.operation = new RtspHandshakeOperation(logger);
 			this.rtpServer = rtpServer;
 			this.bootstrap = new Bootstrap();
 		}
@@ -119,7 +121,7 @@ public class RtspClient implements RtspClientInitializer {
 	@Override
 	public Integer currentSequence() {
 		if (rtspTask != null) {
-			return rtspTask.operation.currentSequence();
+			return operation.currentSequence();
 		}
 		return 1;
 	}

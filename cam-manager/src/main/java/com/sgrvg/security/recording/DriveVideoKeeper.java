@@ -1,4 +1,4 @@
-package com.sgrvg.security;
+package com.sgrvg.security.recording;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -30,6 +30,7 @@ import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
 import com.google.common.base.Strings;
 import com.google.inject.Inject;
+import com.sgrvg.security.SimpleLogger;
 
 import net.spy.memcached.MemcachedClient;
 
