@@ -45,17 +45,17 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	}
 	
 	@Override
-	public final void keep(long startTimestamp, long endTimestamp, ByteBuf video) {
-		if (video.hasArray()) {
-			String startTime = SDF.format(new Date(startTimestamp));
-			String endTime = SDF.format(new Date(endTimestamp));
-			String key = startTime + "-" + endTime;
-			memcachedClient.set(key, 3600 * 3, video.array());
-			video = null;
-			executor.submit(new VideoKeepTask(key));
-		} else {
-			throw new RuntimeException("Expected video to be backed by a byte array");
-		}
+	public final void keep(long startTimestamp, long endTimestamp, String name, ByteBuf video) {
+		video.resetReaderIndex();
+		byte[] data = new byte[video.readableBytes()];
+		video.readBytes(data);
+		String startTime = SDF.format(new Date(startTimestamp));
+		String endTime = SDF.format(new Date(endTimestamp));
+		String key = name + "_" + startTime + "-" + endTime;
+		memcachedClient.set(key, 3600 * 3, data);
+		video = null;
+		data = null;
+		executor.submit(new VideoKeepTask(key));
 	}
 	
 	protected abstract void doKeep(String key, byte[] data);

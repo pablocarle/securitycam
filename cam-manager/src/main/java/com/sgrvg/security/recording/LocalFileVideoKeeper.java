@@ -67,7 +67,9 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 				Files.createDirectory(directory);
 				logger.info("Created directory {}", directory);
 			}
-			Files.write(Paths.get(new URI("file://" + filePath)), data, StandardOpenOption.CREATE);
+			URI fileURI = new URI(filePath);
+			Files.write(Paths.get(fileURI), data, StandardOpenOption.CREATE_NEW);
+			logger.info("Written to file {}, {} bytes", fileURI, data.length);
 			data = null;
 		} catch (IOException | URISyntaxException e) {
 			logger.error("Failed to save local file with key {}. Data size lost: {} bytes", e, key, data.length);

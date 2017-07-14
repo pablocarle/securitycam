@@ -87,7 +87,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 	{
 		 try {
 			drive = new Drive(GoogleNetHttpTransport.newTrustedTransport(), 
-						new GsonFactory(), null);
+						new GsonFactory(), credential);
 		} catch (GeneralSecurityException | IOException e) {
 			logger.error("Failed to initialize DRIVE SERVICE", e);
 		}

@@ -5,6 +5,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.sgrvg.security.ServerConfigHolder;
 import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.VideoKeeper;
@@ -53,8 +54,8 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	public RTPPacketHandler(SimpleLogger logger,
 			FrameBuilder frameBuilder,
 			ServerConfigHolder serverConfig,
-			VideoKeeper driveVideoKeeper,
-			VideoKeeper localFileVideoKeeper) {
+			@Named("drive_keeper") VideoKeeper driveVideoKeeper,
+			@Named("file_keeper") VideoKeeper localFileVideoKeeper) {
 		super();
 		this.logger = logger;
 		this.frameBuilder = frameBuilder;
@@ -66,6 +67,8 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 
 	private void newH264Header() {
 		video = Unpooled.wrappedBuffer(new byte[MAX_PACKET]);
+		video.resetWriterIndex();
+		video.resetReaderIndex();
 		if (sps == null && pps == null) {
 			Optional<RtspServerDefinition> rtspServer = serverConfig.getRtspEndpoint(this);
 			if (rtspServer.isPresent()) {
@@ -95,7 +98,9 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 
 	private void doProcessPacket(H264RtpPacket packet) {
 		if (packet.isStart()) {
-			newH264Header();
+			if (video == null) {
+				newH264Header();
+			}
 			if (packets == null) {
 				packets = new TreeSet<>();
 			} else {
@@ -117,6 +122,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 				ByteBuf videoBuffer = video.readBytes(video.readableBytes());
 				doKeepVideo(startTimestamp, endTimestamp, videoBuffer);
 				videoBuffer = null;
+				newH264Header();
 			}
 		} else {
 			packets.add(packet);
@@ -138,7 +144,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			default:
 				throw new RuntimeException("Unrecognized option " + definition.get().getKeepType().name());
 			}
-			keeper.keep(startTimestamp, endTimestamp, videoBuffer);
+			keeper.keep(startTimestamp, endTimestamp, definition.get().getServerName(), videoBuffer);
 		} else {
 			throw new IllegalStateException("Could not find rtsp server definition bound to this handler");
 		}
