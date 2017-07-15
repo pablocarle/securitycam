@@ -193,7 +193,8 @@ public final class LoggerService implements SimpleLogger {
 			message.append(" - ");
 			message.append(category);
 			message.append(": ");
-			message.append(this.message + "\n");
+			message.append(this.message);
+			message.append(" ["  + Thread.currentThread().getName() + "]\n");
 
 			if (e != null) {
 				StringWriter stringWriter = new StringWriter();
