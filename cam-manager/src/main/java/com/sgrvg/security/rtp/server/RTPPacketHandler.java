@@ -1,5 +1,6 @@
 package com.sgrvg.security.rtp.server;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -28,8 +29,6 @@ import io.netty.channel.socket.DatagramPacket;
  */
 public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 
-	private static final int MAX_PACKET = 768 * 1024; // Tamaño de los bloques.
-
 	private SimpleLogger logger;
 	private FrameBuilder frameBuilder;
 	private ServerConfigHolder serverConfig;
@@ -39,6 +38,8 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	private byte[] sps;
 	private byte[] pps;
 
+	private int blockSize = 0;
+	
 	private ByteBuf video;
 	private boolean firstPacket = false;
 
@@ -66,7 +67,15 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	}
 
 	private void newH264Header() {
-		video = Unpooled.wrappedBuffer(new byte[MAX_PACKET]);
+		if (blockSize == 0) {
+			Optional<RtspServerDefinition> rtspServer = serverConfig.getRtspEndpoint(this);
+			if (rtspServer.isPresent()) {
+				blockSize = rtspServer.get().getBlockSize();
+			} else {
+				throw new RuntimeException("Couldn't find bound rtsp endpoint");
+			}
+		}
+		video = Unpooled.wrappedBuffer(new byte[blockSize * 1024 * 1024]);
 		video.resetWriterIndex();
 		video.resetReaderIndex();
 		if (sps == null && pps == null) {
@@ -147,6 +156,14 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			keeper.keep(startTimestamp, endTimestamp, definition.get().getServerName(), videoBuffer);
 		} else {
 			throw new IllegalStateException("Could not find rtsp server definition bound to this handler");
+		}
+	}
+	
+	public Optional<Instant> getLastTimePacketReceived() {
+		if (lastPacketReceived <= 0) {
+			return Optional.empty();
+		} else {
+			return Optional.of(Instant.ofEpochMilli(lastPacketReceived));
 		}
 	}
 

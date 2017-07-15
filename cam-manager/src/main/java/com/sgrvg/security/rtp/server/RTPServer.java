@@ -36,7 +36,6 @@ public class RTPServer implements RTPServerInitializer {
 	@Inject
 	public RTPServer(SimpleLogger logger, 
 			@Named("rtp_server_boss") EventLoopGroup bossLoopGroup,
-			RTPPacketHandler packetHandler,
 			ServerConfigHolder serverConfig,
 			RTPPacketHandler rtpPacketHandler) {
 		super();
@@ -51,7 +50,7 @@ public class RTPServer implements RTPServerInitializer {
 		task = new RTPServerTask();
 		Thread thread = new Thread(task);
 		thread.start();
-		RTPServerHandle handle = new RTPServerHandleImpl(server.getName(), task, server);
+		RTPServerHandle handle = new RTPServerHandleImpl(server.getServerName(), task, server);
 		serverConfig.bind(handle, rtpPacketHandler);
 		return handle;
 	}
@@ -66,9 +65,9 @@ public class RTPServer implements RTPServerInitializer {
 
 		private Bootstrap bootstrap = new Bootstrap();
 		private List<RTPConnectionStateListener> listeners;
+		private int port = serverConfig.getNextPortInRange();
 		private volatile boolean successfulConnection = false;
 		private volatile boolean failedConnection = false;
-		private int port = 35678;
 		
 		void addConnectionStateListener(RTPConnectionStateListener listener) {
 			listeners.add(listener);

@@ -17,4 +17,11 @@ public interface ServerConfigHolder {
 
 	Optional<RtspServerDefinition> getRtspEndpoint(RTPServerDefinition rtpServer);
 	
+	/**
+	 * Implementor decides how to implement the range
+	 * 
+	 * @return
+	 */
+	int getNextPortInRange();
+	
 }

@@ -21,12 +21,12 @@ public class RtspServerDefinition {
 	private String host;
 	private int port;
 	private String endpoint;
-	private String name;
 	private KeepType keepType;
 	private int startHourSampling = 0;
 	private int endHourSampling = 0;
 	private String serverName;
 	private Properties props;
+	private int blockSize;
 	private SessionDescription sessionDescription = new SessionDescription();
 
 	public RtspServerDefinition(String serverName, Properties props) {
@@ -55,6 +55,7 @@ public class RtspServerDefinition {
 			throw new RTSPInitializationException("Unrecognized save type " + saveType);
 		}
 		String samplingHours = props.getProperty(serverName + "_sampling_hours", "");
+		blockSize = Integer.parseInt(props.getProperty(serverName + "_block_size"));
 		if (!Strings.isNullOrEmpty(samplingHours) && samplingHours.split("-").length == 2) {
 			String[] hours = samplingHours.split("-");
 			this.startHourSampling = Integer.parseInt(hours[0]);
@@ -74,10 +75,6 @@ public class RtspServerDefinition {
 		return endpoint;
 	}
 
-	public String getName() {
-		return name;
-	}
-
 	public URI getURI() throws URISyntaxException {
 		return new URI("rtsp://" + host + ":" + port + endpoint);
 	}
@@ -92,6 +89,10 @@ public class RtspServerDefinition {
 
 	public int getEndHourSampling() {
 		return endHourSampling;
+	}
+	
+	public int getBlockSize() {
+		return blockSize;
 	}
 	
 	public String getServerName() {

@@ -4,6 +4,7 @@ import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.inject.Inject;
 import com.sgrvg.security.ServerConfigHolder;
@@ -14,6 +15,7 @@ import com.sgrvg.security.rtsp.RtspServerDefinition;
 
 public class ServerConfigHolderImpl implements ServerConfigHolder {
 
+	private AtomicInteger port = new AtomicInteger(35678);
 	private Map<RTPServerHandle, ServerComponent> map = new ConcurrentHashMap<>();
 	
 	@Inject
@@ -99,5 +101,10 @@ public class ServerConfigHolderImpl implements ServerConfigHolder {
 				})
 				.map(entry -> entry.getValue().rtspEndpoint)
 				.findFirst();
+	}
+
+	@Override
+	public int getNextPortInRange() {
+		return port.incrementAndGet();
 	}
 }

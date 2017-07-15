@@ -31,18 +31,41 @@ public class ApplicationModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(RtspClientInitializer.class).to(RtspClient.class);
-		bind(RTPServerInitializer.class).to(RTPServer.class);
-		
 		bind(ServerConfigHolder.class).to(ServerConfigHolderImpl.class).asEagerSingleton();
 		bind(SimpleLogger.class).to(LoggerService.class).asEagerSingleton();
-		
-		bind(VideoKeeper.class).to(DriveVideoKeeper.class).asEagerSingleton();
-		
 		bind(FrameBuilder.class).to(H264FU_AFrameBuilder.class).asEagerSingleton();
-		
-		bind(RtspHandshakeOperation.class);
-		bind(RTPPacketHandler.class);
+	}
+	
+	@Provides
+	public RTPPacketHandler getNewRTPPacketHandler(
+			SimpleLogger logger,
+			FrameBuilder frameBuilder,
+			ServerConfigHolder serverConfig,
+			@Named("drive_keeper") VideoKeeper driveVideoKeeper,
+			@Named("file_keeper") VideoKeeper localFileVideoKeeper
+			) {
+		return new RTPPacketHandler(logger, frameBuilder, serverConfig, driveVideoKeeper, localFileVideoKeeper);
+	}
+	
+	@Provides
+	public RTPServerInitializer getRTPServerInitializer(
+			SimpleLogger logger,
+			@Named("rtp_server_boss") EventLoopGroup bossLoopGroup,
+			RTPPacketHandler packetHandler,
+			ServerConfigHolder serverConfig
+			) {
+		return new RTPServer(logger, bossLoopGroup, serverConfig, packetHandler);
+	}
+	
+	@Provides
+	public RtspClientInitializer getRtspClientInitializer(SimpleLogger logger, @Named("default_worker_group") EventLoopGroup workerGroup, 
+			ServerConfigHolder serverConfig, RtspHandshakeOperation operation) {
+		return new RtspClient(logger, workerGroup, serverConfig, operation);
+	}
+	
+	@Provides
+	public RtspHandshakeOperation getHandshakeOperation(SimpleLogger logger, ServerConfigHolder serverConfig) {
+		return new RtspHandshakeOperation(logger, serverConfig);
 	}
 	
 	@Provides
