@@ -12,4 +12,6 @@ public interface RtspClientHandle {
 
 	RtspClientHandle addListener(Object object);
 
+	void onDisconnect(Object object);
+
 }

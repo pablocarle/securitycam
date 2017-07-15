@@ -61,19 +61,25 @@ public class RtspClientMain {
 		rtpServerInstances = new ArrayList<>();
 		rtspClientInstances = new ArrayList<>();
 		
-		servers.stream().forEach(server -> {
-			RtspClientInitializer rtspClientInitializer = injector.getInstance(RtspClientInitializer.class);
-			RTPServerInitializer rtpServerInitializer = injector.getInstance(RTPServerInitializer.class);
-			
-			try {
-				RTPServerHandle rtpServer = rtpServerInitializer.initialize(server);
-				rtpServer.waitConnected();
-				rtpServerInstances.add(rtpServer);
-				rtspClientInstances.add(rtspClientInitializer.initialize(server, rtpServer));
-			} catch (InterruptedException | RTPServerInitializationException e) {
-				logger.error("Failed to initialize server {}", e, server);
-			}
-		});
+		servers.stream().forEach(RtspClientMain::initialize);
+	}
+	
+	private static void initialize(RtspServerDefinition serverDefinition) {
+		RtspClientInitializer rtspClientInitializer = injector.getInstance(RtspClientInitializer.class);
+		RTPServerInitializer rtpServerInitializer = injector.getInstance(RTPServerInitializer.class);
+		try {
+			RTPServerHandle rtpServer = rtpServerInitializer.initialize(serverDefinition);
+			rtpServer.waitConnected();
+			rtpServerInstances.add(rtpServer);
+			RtspClientHandle rtspClient = rtspClientInitializer.initialize(serverDefinition, rtpServer); 
+			rtspClientInstances.add(rtspClient);
+			rtspClient.onDisconnect(server -> {
+				//TODO Eliminar lo que quede, hacer shutdown correcto.
+				initialize(server);
+			});
+		} catch (InterruptedException | RTPServerInitializationException e) {
+			logger.error("Failed to initialize server {}", e, serverDefinition);
+		}
 	}
 	
 	private static void loadServers(final Properties props) {

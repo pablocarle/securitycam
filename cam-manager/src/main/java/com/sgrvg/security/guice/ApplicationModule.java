@@ -13,6 +13,7 @@ import com.sgrvg.security.VideoKeeper;
 import com.sgrvg.security.h264.FrameBuilder;
 import com.sgrvg.security.h264.H264FU_AFrameBuilder;
 import com.sgrvg.security.recording.DriveVideoKeeper;
+import com.sgrvg.security.recording.DropboxVideoKeeper;
 import com.sgrvg.security.recording.LocalFileVideoKeeper;
 import com.sgrvg.security.rtp.server.RTPPacketHandler;
 import com.sgrvg.security.rtp.server.RTPServer;
@@ -80,6 +81,13 @@ public class ApplicationModule extends AbstractModule {
 	@Singleton
 	public VideoKeeper getLocalFileVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger) {
 		return new LocalFileVideoKeeper(memcachedClient, logger);
+	}
+	
+	@Provides
+	@Named("dropbox_keeper")
+	@Singleton
+	public VideoKeeper getDropboxVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger) {
+		return new DropboxVideoKeeper(memcachedClient, logger);
 	}
 	
 	@Provides

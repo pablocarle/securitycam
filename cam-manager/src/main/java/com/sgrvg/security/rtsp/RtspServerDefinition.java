@@ -128,4 +128,46 @@ public class RtspServerDefinition {
 			this.pps = pps;
 		}
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((endpoint == null) ? 0 : endpoint.hashCode());
+		result = prime * result + ((host == null) ? 0 : host.hashCode());
+		result = prime * result + port;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		RtspServerDefinition other = (RtspServerDefinition) obj;
+		if (endpoint == null) {
+			if (other.endpoint != null)
+				return false;
+		} else if (!endpoint.equals(other.endpoint))
+			return false;
+		if (host == null) {
+			if (other.host != null)
+				return false;
+		} else if (!host.equals(other.host))
+			return false;
+		if (port != other.port)
+			return false;
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "RtspServerDefinition [host=" + host + ", port=" + port + ", endpoint=" + endpoint + ", keepType="
+				+ keepType + ", startHourSampling=" + startHourSampling + ", endHourSampling=" + endHourSampling
+				+ ", serverName=" + serverName + ", props=" + props + ", blockSize=" + blockSize
+				+ ", sessionDescription=" + sessionDescription + "]";
+	}
 }
