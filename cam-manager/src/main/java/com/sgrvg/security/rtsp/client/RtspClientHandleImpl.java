@@ -22,4 +22,10 @@ public class RtspClientHandleImpl implements RtspClientHandle {
 		return null;
 	}
 
+	@Override
+	public void onDisconnect(Object object) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

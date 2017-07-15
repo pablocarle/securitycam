@@ -9,12 +9,30 @@
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-all</artifactId>
-			<version>4.1.11.Final</version>
+			<version>${netty.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.ning</groupId>
+			<groupId>org.asynchttpclient</groupId>
 			<artifactId>async-http-client</artifactId>
-			<version>1.9.40</version>
+			<version>${async.http.client.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.asynchttpclient</groupId>
+					<artifactId>netty-codec-dns</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.asynchttpclient</groupId>
+					<artifactId>netty-resolver</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.asynchttpclient</groupId>
+					<artifactId>netty-resolver-dns</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>net.spy</groupId>
@@ -35,22 +53,98 @@
 			<groupId>com.google.apis</groupId>
 			<artifactId>google-api-services-drive</artifactId>
 			<version>v3-rev76-1.22.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>com.google.guava</groupId>
+					<artifactId>guava-jdk5</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.google.http-client</groupId>
+					<artifactId>google-http-client-jackson2</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
-		<!-- Isoparser. Reenable if it becomes convenient (or enough resources) to save files as mp4 
-		<dependency>
-			<groupId>com.googlecode.mp4parser</groupId>
-			<artifactId>isoparser</artifactId>
-			<version>1.1.22</version>
-		</dependency>
-		 -->
 		<dependency>
 			<groupId>com.google.http-client</groupId>
 			<artifactId>google-http-client-gson</artifactId>
 			<version>1.22.0</version>
 		</dependency>
+		<dependency>
+			<groupId>org.bytedeco</groupId>
+			<artifactId>javacv-platform</artifactId>
+			<version>1.3.2</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>flandmark-platform</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>flycapture-platform</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>libdc1394-platform</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>artoolkitplus-platform</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>libfreenect-platform</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>libfreenect2-platform</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>librealsense-platform</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>libfreenect</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>videoinput-platform</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>flandmark</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>flycapture</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>libdc1394</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>libfreenect2</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>artoolkitplus</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>librealsense</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>videoinput</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
 	</dependencies>
 	<properties>
 		<jdk.version>1.8</jdk.version>
+		<async.http.client.version>2.0.33</async.http.client.version>
+		<netty.version>4.1.11.Final</netty.version>
 	</properties>
 	<build>
 		<plugins>
@@ -78,6 +172,14 @@
 							<goal>shade</goal>
 						</goals>
 						<configuration>
+							<filters>
+								<filter>
+									<artifact>org.asynchttpclient:async-http-client</artifact>
+									<excludes>
+										<exclude>io/netty/**</exclude>
+									</excludes>
+								</filter>
+							</filters>
 							<transformers>
 								<!-- add Main-Class to manifest file -->
 								<transformer

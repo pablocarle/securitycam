@@ -20,15 +20,18 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import org.asynchttpclient.AsyncHttpClient;
+import org.asynchttpclient.AsyncHttpClientConfig;
+import org.asynchttpclient.DefaultAsyncHttpClient;
+import org.asynchttpclient.DefaultAsyncHttpClientConfig;
+import org.asynchttpclient.ListenableFuture;
+import org.asynchttpclient.Response;
+import org.asynchttpclient.cookie.Cookie;
+
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.AsyncHttpClientConfig;
-import com.ning.http.client.ListenableFuture;
-import com.ning.http.client.Response;
-import com.ning.http.client.cookie.Cookie;
 import com.sgrvg.security.SimpleLogger;
 
 /**
@@ -90,25 +93,25 @@ public final class LoggerService implements SimpleLogger {
 
 	@Override
 	public void error(String arg0, Object...args) {
-		LogEntry log = new LogEntry(buildMessage(arg0, args), "ERROR", new Date(), null);
+		LogEntry log = new LogEntry(buildMessage(arg0, args), "ERROR", new Date(), Thread.currentThread().getName(), null);
 		entries.add(log);
 	}
 
 	@Override
 	public void error(String arg0, Throwable arg1, Object...args) {
-		LogEntry log = new LogEntry(buildMessage(arg0, args), "ERROR", new Date(), arg1);
+		LogEntry log = new LogEntry(buildMessage(arg0, args), "ERROR", new Date(), Thread.currentThread().getName(), arg1);
 		entries.add(log);
 	}
 
 	@Override
 	public void info(String arg0, Object...args) {
-		LogEntry log = new LogEntry(buildMessage(arg0, args), "INFO", new Date(), null);
+		LogEntry log = new LogEntry(buildMessage(arg0, args), "INFO", new Date(), Thread.currentThread().getName(), null);
 		entries.add(log);
 	}
 
 	@Override
 	public void info(String arg0, Throwable arg1, Object...args) {
-		LogEntry log = new LogEntry(buildMessage(arg0, args), "INFO", new Date(), arg1);
+		LogEntry log = new LogEntry(buildMessage(arg0, args), "INFO", new Date(), Thread.currentThread().getName(), arg1);
 		entries.add(log);
 	}
 
@@ -129,13 +132,13 @@ public final class LoggerService implements SimpleLogger {
 
 	@Override
 	public void warn(String arg0, Object...args) {
-		LogEntry log = new LogEntry(buildMessage(arg0, args), "WARN", new Date(), null);
+		LogEntry log = new LogEntry(buildMessage(arg0, args), "WARN", new Date(), Thread.currentThread().getName(), null);
 		entries.add(log);
 	}
 
 	@Override
 	public void warn(String arg0, Throwable arg1, Object... args) {
-		LogEntry log = new LogEntry(buildMessage(arg0, args), "WARN", new Date(), arg1);
+		LogEntry log = new LogEntry(buildMessage(arg0, args), "WARN", new Date(), Thread.currentThread().getName(), arg1);
 		entries.add(log);
 	}
 
@@ -160,12 +163,14 @@ public final class LoggerService implements SimpleLogger {
 		private String category;
 		private Date timestamp;
 		private Throwable e;
+		private String threadName;
 
-		public LogEntry(String message, String category, Date timestamp, Throwable e) {
+		public LogEntry(String message, String category, Date timestamp, String threadName, Throwable e) {
 			super();
 			this.message = message;
 			this.category = category;
 			this.timestamp = timestamp;
+			this.threadName = threadName;
 			this.e = e;
 		}
 
@@ -194,7 +199,7 @@ public final class LoggerService implements SimpleLogger {
 			message.append(category);
 			message.append(": ");
 			message.append(this.message);
-			message.append(" ["  + Thread.currentThread().getName() + "]\n");
+			message.append(" ["  + threadName + "]\n");
 
 			if (e != null) {
 				StringWriter stringWriter = new StringWriter();
@@ -214,10 +219,12 @@ public final class LoggerService implements SimpleLogger {
 		private List<Cookie> cookies = new ArrayList<>();
 
 		{
-			AsyncHttpClientConfig cf = new AsyncHttpClientConfig.Builder()
+			AsyncHttpClientConfig cf = new DefaultAsyncHttpClientConfig.Builder()
 					.setUserAgent("SimpleLogger - CAM SECURITY")
+					.setFollowRedirect(false)
 					.build();
-			http = new AsyncHttpClient(cf);
+			
+			http = new DefaultAsyncHttpClient(cf);
 		}
 
 		@Override
@@ -257,7 +264,7 @@ public final class LoggerService implements SimpleLogger {
 				return authenticated;
 			} else {
 				try {
-					Response response = sendData(new LogEntry("Check Session", "PING", new Date(), null)).get();
+					Response response = sendData(new LogEntry("Check Session", "PING", new Date(), Thread.currentThread().getName(), null)).get();
 					String location = response.getHeader("Location");
 					return response.getStatusCode() == 200 && Strings.isNullOrEmpty(location);
 				} catch (InterruptedException | ExecutionException e) {
@@ -274,8 +281,6 @@ public final class LoggerService implements SimpleLogger {
 			return http.preparePost(SERVER_LOG_URL)
 				.addHeader("Content-Type", "application/json")
 				.setBody(GSON.toJson(message))
-				.setBodyEncoding("UTF-8")
-				.setFollowRedirects(false)
 				.setCookies(cookies)
 				.execute();
 		}
@@ -286,7 +291,6 @@ public final class LoggerService implements SimpleLogger {
 				LoggerService.this.info("Trying authenticate to remote service in {}", url);
 				Response response = http.preparePost(url)
 					.addHeader("Content-Type", "application/x-www-form-urlencoded")
-					.setFollowRedirects(false)	
 					.execute()
 					.get();
 				

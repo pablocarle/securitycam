@@ -28,6 +28,14 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+              <filters>
+                <filter>
+                  <artifact>org.asynchttpclient:async-http-client</artifact>
+                  <excludes>
+                    <exclude>io/netty/**</exclude>
+                  </excludes>
+                </filter>
+              </filters>
               <transformers>
                 <transformer>
                   <mainClass>com.sgrvg.security.RtspClientMain</mainClass>
@@ -41,6 +49,8 @@
   </build>
   <properties>
     <jdk.version>1.8</jdk.version>
+    <async.http.client.version>2.0.33</async.http.client.version>
+    <netty.version>4.1.11.Final</netty.version>
   </properties>
 </project>
 
