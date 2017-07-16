@@ -24,8 +24,6 @@ import io.netty.handler.codec.rtsp.RtspEncoder;
 /**
  * Deberia crear esta clase
  * 
- * TODO Falta manejo de caidas de la conexion. Volver a intentar en N tiempo?
- * 
  * @author pabloc
  *
  */
@@ -75,16 +73,38 @@ public class RtspClient implements RtspClientInitializer {
 		
 		private Bootstrap bootstrap;
 		private RTPServerHandle rtpServer;
+		private boolean connected = false;
 
 		public RtspClientTask(RTPServerHandle rtpServer) {
 			super();
 			this.rtpServer = rtpServer;
-			this.bootstrap = new Bootstrap();
 		}
 
 		@Override
 		public void run() {
+			int run = 0;
+			ChannelFuture future = null;
 			try {
+				while (future == null && !connected) {
+					logger.info("Try Connection. RUN No. {}", ++run);
+					future = tryConnect();
+					if (future == null || !connected) {
+						Thread.sleep(1000 * 10);
+					}
+				}
+				future.channel().closeFuture().sync();
+				logger.info("Channel closed");
+			} catch (InterruptedException e) {
+				logger.error("InterruptedException waiting for channel close", e);
+				if (!connected) {
+					run();
+				}
+			}
+		}
+
+		private ChannelFuture tryConnect() {
+			try {
+				bootstrap = new Bootstrap();
 				bootstrap.group(workerGroup);
 				bootstrap.channel(NioSocketChannel.class);
 				bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
@@ -101,7 +121,6 @@ public class RtspClient implements RtspClientInitializer {
 				});
 				
 				ChannelFuture future = bootstrap.connect(uri.getHost(), uri.getPort()).sync();
-				//TODO Actualizar la configuracion de servidores;
 				future.channel().closeFuture().addListener(closeFuture -> {
 					logger.info("Operation Complete: Channel closed");
 					if (!closeFuture.isSuccess()) {
@@ -110,10 +129,12 @@ public class RtspClient implements RtspClientInitializer {
 				});
 				// Aca estoy conectado, comienzo chain
 				operation.start(rtpServer.serverDefinition(), future.channel());
-				future.channel().closeFuture().sync();
-				logger.info("Channel closed");
+				connected = true;
+				return future;
 			} catch (Exception e) {
 				logger.error("Failed to stablish a connection with rtsp server {}", e, uri);
+				connected = false;
+				return null;
 			}
 		}
 	}

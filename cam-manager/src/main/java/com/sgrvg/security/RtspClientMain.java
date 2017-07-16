@@ -62,6 +62,9 @@ public class RtspClientMain {
 		rtspClientInstances = new ArrayList<>();
 		
 		servers.stream().forEach(RtspClientMain::initialize);
+		if (rtspClientInstances == null || rtspClientInstances.isEmpty()) {
+			System.exit(1);
+		}
 	}
 	
 	private static void initialize(RtspServerDefinition serverDefinition) {
