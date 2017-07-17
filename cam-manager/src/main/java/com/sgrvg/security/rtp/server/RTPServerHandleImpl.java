@@ -2,6 +2,7 @@ package com.sgrvg.security.rtp.server;
 
 import java.net.URISyntaxException;
 
+import com.google.common.base.Strings;
 import com.sgrvg.security.rtp.server.RTPServer.RTPServerTask;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 
@@ -13,6 +14,9 @@ public final class RTPServerHandleImpl implements RTPServerHandle {
 
 	public RTPServerHandleImpl(String id, RTPServerTask rtpTask, RtspServerDefinition server) {
 		super();
+		if (Strings.isNullOrEmpty(id)) {
+			throw new NullPointerException("ID cannot be null nor empty");
+		}
 		this.rtpTask = rtpTask;
 		this.rtspServerDefinition = server;
 		this.id = id;

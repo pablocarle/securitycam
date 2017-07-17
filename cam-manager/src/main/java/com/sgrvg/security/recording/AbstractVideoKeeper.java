@@ -31,8 +31,6 @@ import net.spy.memcached.MemcachedClient;
  */
 public abstract class AbstractVideoKeeper implements VideoKeeper {
 
-	protected static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd_hhmmss");
-	
 	protected static final String KEY_LAST_CLEANUP = "last_cleanup";
 	
 	protected SimpleLogger logger;
@@ -53,11 +51,12 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	
 	@Override
 	public final void keep(long startTimestamp, long endTimestamp, String name, ByteBuf video) {
+		final SimpleDateFormat sdf = new SimpleDateFormat("\"yyyy-MM-dd_hhmmss\"");
 		video.resetReaderIndex();
 		byte[] data = new byte[video.readableBytes()];
 		video.readBytes(data);
-		String startTime = SDF.format(new Date(startTimestamp));
-		String endTime = SDF.format(new Date(endTimestamp));
+		String startTime = sdf.format(new Date(startTimestamp));
+		String endTime = sdf.format(new Date(endTimestamp));
 		String key = name + "_" + startTime + "-" + endTime;
 		memcachedClient.set(key, 3600 * 3, data);
 		video = null;
@@ -88,7 +87,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 		public void run() {
 			byte[] data = null;
 			try {
-				data = (byte[]) memcachedClient.get(key);
+				data = (byte[]) memcachedClient.get(key); //O lo logro guardar o chau
 				memcachedClient.delete(key);
 			} catch (Exception e) {
 				logger.error("Failed getting key {} from memcached client", e, key);
@@ -117,9 +116,9 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			FFmpegFrameGrabber frameGrabber = null;
 			FFmpegFrameRecorder frameRecorder = null;
 			
+			InputStream is = new ByteArrayInputStream(data);
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream(data.length / 8);
 			try {
-				InputStream is = new ByteArrayInputStream(data);
-				ByteArrayOutputStream outputStream = new ByteArrayOutputStream(data.length / 8);
 				frameGrabber = new FFmpegFrameGrabber(is);
 				frameGrabber.setFormat("h264");
 				frameRecorder = new FFmpegFrameRecorder(outputStream, 0);
