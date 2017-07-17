@@ -29,6 +29,8 @@ import io.netty.channel.socket.DatagramPacket;
  */
 public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 
+	private static final byte[] frameHeader = new byte[] {0x00,0x00,0x01};
+	
 	private SimpleLogger logger;
 	private FrameBuilder frameBuilder;
 	private ServerConfigHolder serverConfig;
@@ -50,19 +52,22 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	
 	private VideoKeeper driveVideoKeeper;
 	private VideoKeeper localFileVideoKeeper;
+	private VideoKeeper dropboxVideoKeeper;
 
 	@Inject
 	public RTPPacketHandler(SimpleLogger logger,
 			FrameBuilder frameBuilder,
 			ServerConfigHolder serverConfig,
 			@Named("drive_keeper") VideoKeeper driveVideoKeeper,
-			@Named("file_keeper") VideoKeeper localFileVideoKeeper) {
+			@Named("file_keeper") VideoKeeper localFileVideoKeeper,
+			@Named("dropbox_keeper") VideoKeeper dropboxVideoKeeper) {
 		super();
 		this.logger = logger;
 		this.frameBuilder = frameBuilder;
 		this.serverConfig = serverConfig;
 		this.driveVideoKeeper = driveVideoKeeper;
 		this.localFileVideoKeeper = localFileVideoKeeper;
+		this.dropboxVideoKeeper = dropboxVideoKeeper;
 		logger.info("Constructed RTPPacketHandler");
 	}
 
@@ -87,9 +92,9 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 				throw new RuntimeException("Couldn't find bound rtsp endpoint");
 			}
 		}
-		video.writeBytes(new byte[] {0x00,0x00,0x01});
+		video.writeBytes(frameHeader);
 		video.writeBytes(sps);
-		video.writeBytes(new byte[] {0x00,0x00,0x01});
+		video.writeBytes(frameHeader);
 		video.writeBytes(pps);
 	}
 
@@ -150,6 +155,8 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 				keeper = localFileVideoKeeper;
 				break;
 			case CLOUD_DROPBOX:
+				keeper = dropboxVideoKeeper;
+				break;
 			default:
 				throw new RuntimeException("Unrecognized option " + definition.get().getKeepType().name());
 			}

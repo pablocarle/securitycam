@@ -43,9 +43,10 @@ public class ApplicationModule extends AbstractModule {
 			FrameBuilder frameBuilder,
 			ServerConfigHolder serverConfig,
 			@Named("drive_keeper") VideoKeeper driveVideoKeeper,
-			@Named("file_keeper") VideoKeeper localFileVideoKeeper
+			@Named("file_keeper") VideoKeeper localFileVideoKeeper,
+			@Named("dropbox_keeper") VideoKeeper dropboxKeeper
 			) {
-		return new RTPPacketHandler(logger, frameBuilder, serverConfig, driveVideoKeeper, localFileVideoKeeper);
+		return new RTPPacketHandler(logger, frameBuilder, serverConfig, driveVideoKeeper, localFileVideoKeeper, dropboxKeeper);
 	}
 	
 	@Provides

@@ -51,7 +51,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	
 	@Override
 	public final void keep(long startTimestamp, long endTimestamp, String name, ByteBuf video) {
-		final SimpleDateFormat sdf = new SimpleDateFormat("\"yyyy-MM-dd_hhmmss\"");
+		final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_hhmmss");
 		video.resetReaderIndex();
 		byte[] data = new byte[video.readableBytes()];
 		video.readBytes(data);
