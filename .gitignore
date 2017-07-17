@@ -8,3 +8,5 @@ live/
 rtspserver/
 
 *.pcapng
+
+*.log
