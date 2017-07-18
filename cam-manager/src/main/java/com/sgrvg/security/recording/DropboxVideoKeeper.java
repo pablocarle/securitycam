@@ -14,8 +14,8 @@ import net.spy.memcached.MemcachedClient;
  */
 public class DropboxVideoKeeper extends AbstractVideoKeeper {
 
-	public DropboxVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger) {
-		super(memcachedClient, logger);
+	public DropboxVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, boolean doCompression) {
+		super(memcachedClient, logger, doCompression);
 	}
 
 	@Override

@@ -96,8 +96,8 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 	
 	
 	@Inject
-	public DriveVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger) {
-		super(memcachedClient, logger);
+	public DriveVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, boolean doCompression) {
+		super(memcachedClient, logger, doCompression);
 	}
 
 	@Override
@@ -114,7 +114,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 			File folder = findTodaysFolder().map(file -> file).orElseGet(this::createTodayFolder);
 			
 			File fileMetadata = new File();
-			fileMetadata.setName(key + ".264");
+			fileMetadata.setName(key);
 			fileMetadata.setParents(Collections.singletonList(folder.getId()));
 			Drive.Files.Create createRequest = drive.files().create(fileMetadata , new ByteArrayContent("video/H264", data));
 			createRequest.getMediaHttpUploader().setProgressListener(listener -> {

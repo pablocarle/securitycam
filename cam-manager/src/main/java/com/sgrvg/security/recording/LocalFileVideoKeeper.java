@@ -52,8 +52,8 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 	}
 
 	@Inject
-	public LocalFileVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger) {
-		super(memcachedClient, logger);
+	public LocalFileVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, boolean doCompression) {
+		super(memcachedClient, logger, doCompression);
 	}
 
 	@Override
@@ -61,7 +61,7 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 		final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd");
 		try {
 			final String path = "file://" + basePath + "/" + SDF.format(new Date());
-			final String filePath = path + "/" + key + ".264";
+			final String filePath = path + "/" + key;
 			Path directory = Paths.get(new URI(path));
 			if (Files.notExists(directory, LinkOption.NOFOLLOW_LINKS)) {
 				Files.createDirectory(directory);

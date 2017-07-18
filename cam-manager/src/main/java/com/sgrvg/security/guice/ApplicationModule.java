@@ -74,21 +74,21 @@ public class ApplicationModule extends AbstractModule {
 	@Named("drive_keeper")
 	@Singleton
 	public VideoKeeper getDriveVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger) {
-		return new DriveVideoKeeper(memcachedClient, logger);
+		return new DriveVideoKeeper(memcachedClient, logger, true);
 	}
 	
 	@Provides
 	@Named("file_keeper")
 	@Singleton
 	public VideoKeeper getLocalFileVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger) {
-		return new LocalFileVideoKeeper(memcachedClient, logger);
+		return new LocalFileVideoKeeper(memcachedClient, logger, false);
 	}
 	
 	@Provides
 	@Named("dropbox_keeper")
 	@Singleton
 	public VideoKeeper getDropboxVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger) {
-		return new DropboxVideoKeeper(memcachedClient, logger);
+		return new DropboxVideoKeeper(memcachedClient, logger, true);
 	}
 	
 	@Provides

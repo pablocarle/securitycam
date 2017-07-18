@@ -39,14 +39,19 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	private ExecutorService executor;
 	
 	private volatile boolean lock = false;
+
+	private final boolean doCompression;
 	
 	@Inject
-	public AbstractVideoKeeper(MemcachedClient memcachedClient,
-			SimpleLogger logger) {
+	public AbstractVideoKeeper(
+			MemcachedClient memcachedClient,
+			SimpleLogger logger,
+			boolean doCompression) {
 		super();
 		this.memcachedClient = memcachedClient;
 		this.logger = logger;
 		this.executor = Executors.newFixedThreadPool(5);
+		this.doCompression = doCompression;
 	}
 	
 	@Override
@@ -58,10 +63,15 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 		String startTime = sdf.format(new Date(startTimestamp));
 		String endTime = sdf.format(new Date(endTimestamp));
 		String key = name + "_" + startTime + "-" + endTime;
-		memcachedClient.set(key, 3600 * 3, data);
-		video = null;
-		data = null;
-		executor.submit(new VideoKeepTask(key));
+		try {
+			memcachedClient.set(key, 3600 * 3, data);
+			video = null;
+			data = null;
+			executor.submit(new VideoKeepTask(key));
+			logger.info("Submitted task with keeper {} and key {}", getID(), key);
+		} catch (Exception e) {
+			logger.error("Failed to keep video. {} bytes data lost", e, video.readableBytes());
+		}
 	}
 	
 	protected abstract void doKeep(String key, byte[] data);
@@ -85,17 +95,25 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 		
 		@Override
 		public void run() {
+			logger.info("Video keep task started for keeper {} with id {}", getID(), key);
 			byte[] data = null;
 			try {
+				logger.debug("Get key {} from memcached", key);
 				data = (byte[]) memcachedClient.get(key); //O lo logro guardar o chau
+				logger.debug("Got key {} from memcached", key);
 				memcachedClient.delete(key);
+				logger.debug("Deleted key {} from memcached", key);
 			} catch (Exception e) {
 				logger.error("Failed getting key {} from memcached client", e, key);
 			}
 			if (data != null && data.length > 0) {
 				Instant begin = Instant.now();
-				data = compressVideo(data);
-				doKeep(key, data);
+				if (doCompression) {
+					data = compressVideo(data);
+					doKeep(key + ".mkv", data);
+				} else {
+					doKeep(key + ".264", data);
+				}
 				logger.info("Keeping of file with {} keeper took {} seconds", getID(), ChronoUnit.SECONDS.between(begin, Instant.now()));
 			}
 			data = null;
@@ -110,34 +128,46 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				checkDateAndCleanup(lastCleanup);
 				lock = false;
 			}
+			logger.info("Video keep task finished for keeper {}", getID());
+			System.gc();
 		}
 
 		private byte[] compressVideo(byte[] data) {
+			logger.debug("Start compression of {} bytes of video", data.length);
 			FFmpegFrameGrabber frameGrabber = null;
 			FFmpegFrameRecorder frameRecorder = null;
 			
 			InputStream is = new ByteArrayInputStream(data);
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream(data.length / 8);
 			try {
+				logger.debug("Join try catch block");
 				frameGrabber = new FFmpegFrameGrabber(is);
 				frameGrabber.setFormat("h264");
 				frameRecorder = new FFmpegFrameRecorder(outputStream, 0);
 				
+				logger.debug("Created objects");
 				frameGrabber.start();
+				logger.debug("Started frame grabber");
 				frameRecorder.setFormat("matroska");
 				frameRecorder.setImageHeight(frameGrabber.getImageHeight());
 				frameRecorder.setImageWidth(frameGrabber.getImageWidth());
 				frameRecorder.setVideoCodecName("libx264");
 				frameRecorder.start();
+				logger.debug("Started frame recorder");
 				Frame frame = null;
 				while ((frame = frameGrabber.grab()) != null) {
 					frameRecorder.record(frame);
 				}
 				byte[] outData = outputStream.toByteArray();
 				logger.info("compressed {} bytes to {} bytes", data.length, outData.length);
+				frameGrabber.stop();
+				frameRecorder.stop();
 				return outData;
 			} catch (Exception e) {
 				logger.error("Failed compressing video of size {} bytes. Fallback to raw h264", e, data.length);
+				return data;
+			} catch (Error err) {
+				logger.error("Fail", err);
 				return data;
 			} finally {
 				if (frameGrabber != null) {
@@ -154,6 +184,9 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 						logger.error("Failed closing frameRecorder resource", e);
 					}
 				}
+				is = null;
+				outputStream = null;
+				logger.debug("Finished closing compression resources");
 			}
 		}
 

@@ -15,12 +15,18 @@ public interface SimpleLogger {
 	public void info(String arg0, Object...args);
 
 	public void info(String arg0, Throwable arg1, Object...args);
+	
+	public void debug(String arg0, Object...args);
+
+	public void debug(String arg0, Throwable arg1, Object...args);
 
 	public boolean isErrorEnabled();
 
 	public boolean isInfoEnabled();
 
 	public boolean isWarnEnabled();
+	
+	public boolean isDebugEnabled();
 
 	public void warn(String arg0, Object...args);
 

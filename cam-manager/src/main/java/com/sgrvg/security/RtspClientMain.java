@@ -34,6 +34,9 @@ public class RtspClientMain {
 	private static Injector injector; 
 	
 	static {
+		System.setProperty("org.bytedeco.javacpp.maxphysicalbytes", "0"); 
+		System.setProperty("org.bytedeco.javacpp.maxbytes", "0");
+
 		Properties props = new Properties();
 		try {
 			props.load(RtspClientMain.class.getClassLoader().getResourceAsStream("rtsp_servers.properties"));

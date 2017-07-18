@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
@@ -42,6 +43,23 @@ import com.sgrvg.security.SimpleLogger;
  */
 public final class LoggerService implements SimpleLogger {
 
+	private enum Category {
+		DEBUG, INFO, WARN, ERROR;
+		
+		@SuppressWarnings("unused")
+		static Optional<Category> parse(String category) {
+			if (Strings.isNullOrEmpty(category)) {
+				throw new IllegalArgumentException("Category must be");
+			}
+			for (Category c : values()) {
+				if (c.name().equalsIgnoreCase(category)) {
+					return Optional.of(c);
+				}
+			}
+			return Optional.empty();
+		}
+	}
+	
 	private static final String SERVER_LOG_URL = "https://sgrvg-carle.rhcloud.com/service/logging";
 	private static final String SERVER_LOG_LOGIN_URL = "https://sgrvg-carle.rhcloud.com/j_spring_security_check";
 	private static final String USERNAME = System.getenv("LOG_USERNAME");
@@ -58,6 +76,7 @@ public final class LoggerService implements SimpleLogger {
 	private final boolean infoEnabled;
 	private final boolean warnEnabled;
 	private final boolean errorEnabled;
+	private final boolean debugEnabled;
 
 	@Inject
 	public LoggerService() {
@@ -75,6 +94,7 @@ public final class LoggerService implements SimpleLogger {
 		infoEnabled = Boolean.parseBoolean(props.getProperty("info", "true"));
 		warnEnabled = Boolean.parseBoolean(props.getProperty("warn", "true"));
 		errorEnabled = Boolean.parseBoolean(props.getProperty("error", "true"));
+		debugEnabled = Boolean.parseBoolean(props.getProperty("debug", "true"));
 		entries = new LinkedBlockingDeque<>(Integer.valueOf(props.getProperty("max_log_queue", "1000")));
 		executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
 			final ThreadFactory delegate = Executors.defaultThreadFactory();
@@ -93,26 +113,34 @@ public final class LoggerService implements SimpleLogger {
 
 	@Override
 	public void error(String arg0, Object...args) {
-		LogEntry log = new LogEntry(buildMessage(arg0, args), "ERROR", new Date(), Thread.currentThread().getName(), null);
-		entries.add(log);
+		if (isErrorEnabled()) {
+			LogEntry log = new LogEntry(buildMessage(arg0, args), "ERROR", new Date(), Thread.currentThread().getName(), null);
+			entries.add(log);
+		}
 	}
 
 	@Override
 	public void error(String arg0, Throwable arg1, Object...args) {
-		LogEntry log = new LogEntry(buildMessage(arg0, args), "ERROR", new Date(), Thread.currentThread().getName(), arg1);
-		entries.add(log);
+		if (isErrorEnabled()) {
+			LogEntry log = new LogEntry(buildMessage(arg0, args), "ERROR", new Date(), Thread.currentThread().getName(), arg1);
+			entries.add(log);
+		}
 	}
 
 	@Override
 	public void info(String arg0, Object...args) {
-		LogEntry log = new LogEntry(buildMessage(arg0, args), "INFO", new Date(), Thread.currentThread().getName(), null);
-		entries.add(log);
+		if (isInfoEnabled()) {
+			LogEntry log = new LogEntry(buildMessage(arg0, args), "INFO", new Date(), Thread.currentThread().getName(), null);
+			entries.add(log);
+		}
 	}
 
 	@Override
 	public void info(String arg0, Throwable arg1, Object...args) {
-		LogEntry log = new LogEntry(buildMessage(arg0, args), "INFO", new Date(), Thread.currentThread().getName(), arg1);
-		entries.add(log);
+		if (isInfoEnabled()) {
+			LogEntry log = new LogEntry(buildMessage(arg0, args), "INFO", new Date(), Thread.currentThread().getName(), arg1);
+			entries.add(log);
+		}
 	}
 
 	@Override
@@ -129,17 +157,58 @@ public final class LoggerService implements SimpleLogger {
 	public boolean isWarnEnabled() {
 		return warnEnabled;
 	}
+	
+	@Override
+	public boolean isDebugEnabled() {
+		return debugEnabled;
+	}
+	
+	@SuppressWarnings("unused")
+	private boolean isCategoryEnabled(Category category) {
+		switch (category) {
+		case DEBUG:
+			return isDebugEnabled();
+		case ERROR:
+			return isErrorEnabled();
+		case INFO:
+			return isInfoEnabled();
+		case WARN:
+			return isWarnEnabled();
+		default:
+			return true;
+		}
+	}
 
 	@Override
 	public void warn(String arg0, Object...args) {
-		LogEntry log = new LogEntry(buildMessage(arg0, args), "WARN", new Date(), Thread.currentThread().getName(), null);
-		entries.add(log);
+		if (isWarnEnabled()) {
+			LogEntry log = new LogEntry(buildMessage(arg0, args), "WARN", new Date(), Thread.currentThread().getName(), null);
+			entries.add(log);
+		}
 	}
 
 	@Override
 	public void warn(String arg0, Throwable arg1, Object... args) {
-		LogEntry log = new LogEntry(buildMessage(arg0, args), "WARN", new Date(), Thread.currentThread().getName(), arg1);
-		entries.add(log);
+		if (isWarnEnabled()) {
+			LogEntry log = new LogEntry(buildMessage(arg0, args), "WARN", new Date(), Thread.currentThread().getName(), arg1);
+			entries.add(log);
+		}
+	}
+	
+	@Override
+	public void debug(String arg0, Object... args) {
+		if (isDebugEnabled()) {
+			LogEntry log = new LogEntry(buildMessage(arg0, args), "DEBUG", new Date(), Thread.currentThread().getName(), null);
+			entries.add(log);
+		}
+	}
+
+	@Override
+	public void debug(String arg0, Throwable arg1, Object... args) {
+		if (isDebugEnabled()) {
+			LogEntry log = new LogEntry(buildMessage(arg0, args), "DEBUG", new Date(), Thread.currentThread().getName(), arg1);
+			entries.add(log);
+		}
 	}
 
 	private String buildMessage(String messageWithMarkers, Object...args) {
