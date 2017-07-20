@@ -143,6 +143,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				logger.debug("Join try catch block");
 				frameGrabber = new FFmpegFrameGrabber(is);
 				frameGrabber.setFormat("h264");
+				frameGrabber.setAudioChannels(0);
 				frameRecorder = new FFmpegFrameRecorder(outputStream, 0);
 				
 				logger.debug("Created objects");
@@ -152,6 +153,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				frameRecorder.setImageHeight(frameGrabber.getImageHeight());
 				frameRecorder.setImageWidth(frameGrabber.getImageWidth());
 				frameRecorder.setVideoCodecName("libx264");
+				frameRecorder.setVideoOption("crf", "23.0");
 				frameRecorder.start();
 				logger.debug("Started frame recorder");
 				Frame frame = null;

@@ -107,7 +107,6 @@ public final class LoggerService implements SimpleLogger {
 				return result;
 			}
 		});
-		System.out.println("Submit log send task");
 		executor.submit(new LogSendTask());
 	}
 
