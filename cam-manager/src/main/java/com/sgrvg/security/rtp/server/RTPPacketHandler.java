@@ -1,6 +1,8 @@
 package com.sgrvg.security.rtp.server;
 
+import java.lang.reflect.Array;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -16,6 +18,7 @@ import com.sgrvg.security.rtp.RtpPacket;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -55,13 +58,16 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	private VideoKeeper localFileVideoKeeper;
 	private VideoKeeper dropboxVideoKeeper;
 
+	private ByteBufAllocator byteBufAllocator;
+
 	@Inject
 	public RTPPacketHandler(SimpleLogger logger,
 			FrameBuilder frameBuilder,
 			ServerConfigHolder serverConfig,
 			@Named("drive_keeper") VideoKeeper driveVideoKeeper,
 			@Named("file_keeper") VideoKeeper localFileVideoKeeper,
-			@Named("dropbox_keeper") VideoKeeper dropboxVideoKeeper) {
+			@Named("dropbox_keeper") VideoKeeper dropboxVideoKeeper,
+			ByteBufAllocator byteBufAllocator) {
 		super();
 		this.logger = logger;
 		this.frameBuilder = frameBuilder;
@@ -69,6 +75,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 		this.driveVideoKeeper = driveVideoKeeper;
 		this.localFileVideoKeeper = localFileVideoKeeper;
 		this.dropboxVideoKeeper = dropboxVideoKeeper;
+		this.byteBufAllocator = byteBufAllocator;
 		logger.info("Constructed RTPPacketHandler");
 	}
 
@@ -81,7 +88,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 				throw new RuntimeException("Couldn't find bound rtsp endpoint");
 			}
 		}
-		video = Unpooled.wrappedBuffer(new byte[blockSize * 1024 * 1024]);
+		video = byteBufAllocator.buffer(blockSize * 1024, blockSize * 1024 * 1024);
 		video.resetWriterIndex();
 		video.resetReaderIndex();
 		if (sps == null && pps == null) {
@@ -135,6 +142,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 				firstPacket = true;
 				endTimestamp = System.currentTimeMillis();
 				ByteBuf videoBuffer = video.readBytes(video.readableBytes());
+				video.release();
 				doKeepVideo(startTimestamp, endTimestamp, videoBuffer);
 				videoBuffer = null;
 				newH264Header();
@@ -147,7 +155,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 		}
 	}
 
-	private void doKeepVideo(long startTimestamp, long endTimestamp, ByteBuf videoBuffer) {
+	private void doKeepVideo(final long startTimestamp, final long endTimestamp, final ByteBuf videoBuffer) {
 		Optional<RtspServerDefinition> definition = serverConfig.getRtspEndpoint(this);
 		if (definition.isPresent()) {
 			VideoKeeper keeper = null;

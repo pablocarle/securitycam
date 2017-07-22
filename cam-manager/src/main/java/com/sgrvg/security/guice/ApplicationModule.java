@@ -24,6 +24,8 @@ import com.sgrvg.security.rtsp.client.RtspHandshakeOperation;
 import com.sgrvg.security.util.LoggerService;
 import com.sgrvg.security.util.ServerConfigHolderImpl;
 
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import net.spy.memcached.MemcachedClient;
@@ -44,9 +46,10 @@ public class ApplicationModule extends AbstractModule {
 			ServerConfigHolder serverConfig,
 			@Named("drive_keeper") VideoKeeper driveVideoKeeper,
 			@Named("file_keeper") VideoKeeper localFileVideoKeeper,
-			@Named("dropbox_keeper") VideoKeeper dropboxKeeper
+			@Named("dropbox_keeper") VideoKeeper dropboxKeeper,
+			ByteBufAllocator byteBufAllocator
 			) {
-		return new RTPPacketHandler(logger, frameBuilder, serverConfig, driveVideoKeeper, localFileVideoKeeper, dropboxKeeper);
+		return new RTPPacketHandler(logger, frameBuilder, serverConfig, driveVideoKeeper, localFileVideoKeeper, dropboxKeeper, byteBufAllocator);
 	}
 	
 	@Provides
@@ -116,5 +119,11 @@ public class ApplicationModule extends AbstractModule {
 	@Singleton
 	public MemcachedClient getMemcachedClient() throws IOException {
 		return new MemcachedClient(new InetSocketAddress(11211));
+	}
+	
+	@Provides
+	@Singleton
+	public ByteBufAllocator getDefaultByteBufAllocator() {
+		return PooledByteBufAllocator.DEFAULT;
 	}
 }

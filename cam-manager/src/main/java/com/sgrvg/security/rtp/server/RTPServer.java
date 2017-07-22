@@ -9,9 +9,11 @@ import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
@@ -77,6 +79,7 @@ public class RTPServer implements RTPServerInitializer {
 		public void run() {
 			bootstrap.group(bossLoopGroup);
 			bootstrap.channel(NioDatagramChannel.class);
+			bootstrap.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
 			bootstrap.handler(new ChannelInitializer<DatagramChannel>() {
 
 				@Override
