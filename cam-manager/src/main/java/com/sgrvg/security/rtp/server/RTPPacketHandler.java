@@ -1,8 +1,6 @@
 package com.sgrvg.security.rtp.server;
 
-import java.lang.reflect.Array;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -19,8 +17,6 @@ import com.sgrvg.security.rtsp.RtspServerDefinition;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
@@ -141,10 +137,9 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			} else {
 				firstPacket = true;
 				endTimestamp = System.currentTimeMillis();
-				ByteBuf videoBuffer = video.readBytes(video.readableBytes());
+				doKeepVideo(startTimestamp, endTimestamp, video);
 				video.release();
-				doKeepVideo(startTimestamp, endTimestamp, videoBuffer);
-				videoBuffer = null;
+				video = null;
 				newH264Header();
 				//Asumo que siempre va a entrar al menos 1 frame
 				video.writeBytes(frame);

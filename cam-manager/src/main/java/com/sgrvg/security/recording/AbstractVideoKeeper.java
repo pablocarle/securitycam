@@ -66,7 +66,6 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 		String key = name + "_" + startTime + "-" + endTime;
 		try {
 			memcachedClient.set(key, 3600 * 3, data);
-			video.release();
 			video = null;
 			data = null;
 			executor.submit(new VideoKeepTask(key));
