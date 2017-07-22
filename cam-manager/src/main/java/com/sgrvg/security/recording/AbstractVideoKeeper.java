@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.bytedeco.javacpp.avcodec;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
 import org.bytedeco.javacv.Frame;
@@ -134,6 +135,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 
 		private byte[] compressVideo(byte[] data) {
 			logger.debug("Start compression of {} bytes of video", data.length);
+			//List<Frame> frames = new ArrayList<>();
 			FFmpegFrameGrabber frameGrabber = null;
 			FFmpegFrameRecorder frameRecorder = null;
 			
@@ -152,13 +154,14 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				frameRecorder.setFormat("matroska");
 				frameRecorder.setImageHeight(frameGrabber.getImageHeight());
 				frameRecorder.setImageWidth(frameGrabber.getImageWidth());
-				frameRecorder.setVideoCodecName("libx264");
-				frameRecorder.setVideoOption("crf", "23.0");
+				frameRecorder.setVideoBitrate(1000000);
+				frameRecorder.setVideoCodec(avcodec.AV_CODEC_ID_MPEG4);
 				frameRecorder.start();
 				logger.debug("Started frame recorder");
 				Frame frame = null;
 				while ((frame = frameGrabber.grab()) != null) {
 					frameRecorder.record(frame);
+					
 				}
 				byte[] outData = outputStream.toByteArray();
 				logger.info("compressed {} bytes to {} bytes", data.length, outData.length);
@@ -170,7 +173,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				return data;
 			} catch (Error err) {
 				logger.error("Fail", err);
-				return data;
+				throw err;
 			} finally {
 				if (frameGrabber != null) {
 					try {

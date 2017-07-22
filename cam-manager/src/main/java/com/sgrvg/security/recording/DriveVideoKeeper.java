@@ -118,7 +118,32 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 			fileMetadata.setParents(Collections.singletonList(folder.getId()));
 			Drive.Files.Create createRequest = drive.files().create(fileMetadata , new ByteArrayContent("video/H264", data));
 			createRequest.getMediaHttpUploader().setProgressListener(listener -> {
-				logger.info("Progress for upload of file {} is {}", key);
+				if (listener == null) return;
+				String status = null;
+		        switch (listener.getUploadState()) {
+		            case INITIATION_STARTED:
+		            	status = "Initiation started!";
+		                break;
+		            case INITIATION_COMPLETE:
+		            	status = "Initiation completed!";
+		                break;
+		            case MEDIA_IN_PROGRESS:
+		                double percent = listener.getProgress() * 100;
+		                status = "In Progress";
+		                if (logger.isDebugEnabled()) {
+		                	logger.debug("Progress for key {} is {}%", key, String.valueOf(percent));
+		                }
+		                break;
+		            case MEDIA_COMPLETE:
+		            	status = "Upload is complete!";
+		            case NOT_STARTED:
+		            	status = "Upload has not started yet";
+		            	break;
+		            default:
+		            	status = "Unknown status";
+		            	break;
+		        }
+				logger.info("Progress for upload of file {} is {}", key, status);
 			});
 			createRequest.execute();
 			data = null;
