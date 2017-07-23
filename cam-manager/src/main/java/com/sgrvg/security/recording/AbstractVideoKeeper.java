@@ -135,7 +135,6 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 
 		private byte[] compressVideo(byte[] data) {
 			logger.debug("Start compression of {} bytes of video", data.length);
-			//List<Frame> frames = new ArrayList<>();
 			FFmpegFrameGrabber frameGrabber = null;
 			FFmpegFrameRecorder frameRecorder = null;
 			
@@ -161,7 +160,6 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				Frame frame = null;
 				while ((frame = frameGrabber.grab()) != null) {
 					frameRecorder.record(frame);
-					
 				}
 				byte[] outData = outputStream.toByteArray();
 				logger.info("compressed {} bytes to {} bytes", data.length, outData.length);
