@@ -178,8 +178,6 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				byte[] outData = new byte[buffer.readableBytes()];
 				buffer.readBytes(outData);
 				logger.info("compressed {} bytes to {} bytes", data.length, outData.length);
-				frameGrabber.stop();
-				frameRecorder.stop();
 				return outData;
 			} catch (Exception e) {
 				logger.error("Failed compressing video of size {} bytes. Fallback to raw h264", e, data.length);
