@@ -4,6 +4,7 @@ import java.util.Date;
 
 import com.sgrvg.security.SimpleLogger;
 
+import io.netty.buffer.ByteBufAllocator;
 import net.spy.memcached.MemcachedClient;
 
 /**
@@ -14,8 +15,8 @@ import net.spy.memcached.MemcachedClient;
  */
 public class DropboxVideoKeeper extends AbstractVideoKeeper {
 
-	public DropboxVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, boolean doCompression) {
-		super(memcachedClient, logger, doCompression);
+	public DropboxVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, ByteBufAllocator byteBufAllocator, boolean doCompression) {
+		super(memcachedClient, logger, byteBufAllocator, doCompression);
 	}
 
 	@Override

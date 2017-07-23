@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 import com.google.inject.Inject;
 import com.sgrvg.security.SimpleLogger;
 
+import io.netty.buffer.ByteBufAllocator;
 import net.spy.memcached.MemcachedClient;
 
 /**
@@ -52,8 +53,8 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 	}
 
 	@Inject
-	public LocalFileVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, boolean doCompression) {
-		super(memcachedClient, logger, doCompression);
+	public LocalFileVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, ByteBufAllocator byteBufAllocator, boolean doCompression) {
+		super(memcachedClient, logger, byteBufAllocator, doCompression);
 	}
 
 	@Override

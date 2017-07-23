@@ -116,7 +116,6 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 		}
 		H264RtpPacket packet = new H264RtpPacket(content);
 		doProcessPacket(packet);
-		content.release();
 		lastPacketReceived = System.currentTimeMillis();
 	}
 

@@ -1,9 +1,9 @@
 package com.sgrvg.security.recording;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -23,6 +23,8 @@ import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.VideoKeeper;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufOutputStream;
 import net.spy.memcached.MemcachedClient;
 
 /**
@@ -40,6 +42,8 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	private MemcachedClient memcachedClient;
 	private ExecutorService executor;
 	
+	private ByteBufAllocator byteBufAllocator;
+	
 	private volatile boolean lock = false;
 
 	private final boolean doCompression;
@@ -48,12 +52,14 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	public AbstractVideoKeeper(
 			MemcachedClient memcachedClient,
 			SimpleLogger logger,
+			ByteBufAllocator bytebufAllocator,
 			boolean doCompression) {
 		super();
 		this.memcachedClient = memcachedClient;
 		this.logger = logger;
 		this.executor = Executors.newFixedThreadPool(5);
 		this.doCompression = doCompression;
+		this.byteBufAllocator = bytebufAllocator;
 	}
 	
 	@Override
@@ -110,15 +116,20 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			}
 			if (data != null && data.length > 0) {
 				Instant begin = Instant.now();
+				String extension = ".264";
 				if (doCompression) {
 					data = compressVideo(data);
-					doKeep(key + ".mkv", data);
-				} else {
-					doKeep(key + ".264", data);
+					extension = ".mkv";
 				}
-				logger.info("Keeping of file with {} keeper took {} seconds", getID(), ChronoUnit.SECONDS.between(begin, Instant.now()));
+				try {
+					doKeep(key + extension, data);
+					logger.info("Keeping of file with {} keeper took {} seconds", getID(), ChronoUnit.SECONDS.between(begin, Instant.now()));
+				} catch (Exception e) {
+					logger.error("Unhandled exception from keeper {}", e, getID());
+				} finally {
+					data = null;
+				}
 			}
-			data = null;
 			if (!lock) {
 				lock = true;
 				Date lastCleanup = null;
@@ -139,7 +150,8 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			FFmpegFrameGrabber frameGrabber = null;
 			FFmpegFrameRecorder frameRecorder = null;
 			InputStream is = new ByteArrayInputStream(data);
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream(data.length / 8);
+			ByteBuf buffer = byteBufAllocator.buffer();
+			OutputStream outputStream = new ByteBufOutputStream(buffer);
 			try {
 				logger.debug("Join try catch block");
 				frameGrabber = new FFmpegFrameGrabber(is);
@@ -161,7 +173,8 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				while ((frame = frameGrabber.grab()) != null) {
 					frameRecorder.record(frame);
 				}
-				byte[] outData = outputStream.toByteArray();
+				byte[] outData = new byte[buffer.readableBytes()];
+				buffer.readBytes(outData);
 				logger.info("compressed {} bytes to {} bytes", data.length, outData.length);
 				frameGrabber.stop();
 				frameRecorder.stop();
@@ -197,6 +210,8 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				} catch (IOException e) {
 					logger.error("Failed closing inputStream resource", e);
 				}
+				boolean release = buffer.release();
+				logger.debug("Release of compression buffer with result: {}", release);
 				is = null;
 				outputStream = null;
 				frameGrabber = null;

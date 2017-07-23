@@ -32,6 +32,7 @@ import com.google.common.base.Strings;
 import com.google.inject.Inject;
 import com.sgrvg.security.SimpleLogger;
 
+import io.netty.buffer.ByteBufAllocator;
 import net.spy.memcached.MemcachedClient;
 
 /**
@@ -96,8 +97,8 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 	
 	
 	@Inject
-	public DriveVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, boolean doCompression) {
-		super(memcachedClient, logger, doCompression);
+	public DriveVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, ByteBufAllocator byteBufAllocator, boolean doCompression) {
+		super(memcachedClient, logger, byteBufAllocator, doCompression);
 	}
 
 	@Override
