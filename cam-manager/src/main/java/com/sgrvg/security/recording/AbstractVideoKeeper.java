@@ -43,23 +43,26 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	private ExecutorService executor;
 	
 	private ByteBufAllocator byteBufAllocator;
+	private int videoBitrate;
 	
 	private volatile boolean lock = false;
 
 	private final boolean doCompression;
-	
+
 	@Inject
 	public AbstractVideoKeeper(
 			MemcachedClient memcachedClient,
 			SimpleLogger logger,
 			ByteBufAllocator bytebufAllocator,
-			boolean doCompression) {
+			boolean doCompression,
+			int videoBitrate) {
 		super();
 		this.memcachedClient = memcachedClient;
 		this.logger = logger;
 		this.executor = Executors.newFixedThreadPool(5);
 		this.doCompression = doCompression;
 		this.byteBufAllocator = bytebufAllocator;
+		this.videoBitrate = videoBitrate;
 	}
 	
 	@Override
@@ -165,7 +168,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				frameRecorder.setFormat("matroska");
 				frameRecorder.setImageHeight(frameGrabber.getImageHeight());
 				frameRecorder.setImageWidth(frameGrabber.getImageWidth());
-				frameRecorder.setVideoBitrate(1000000);
+				frameRecorder.setVideoBitrate(videoBitrate);
 				frameRecorder.setVideoCodec(avcodec.AV_CODEC_ID_MPEG4);
 				frameRecorder.start();
 				logger.debug("Started frame recorder");

@@ -52,9 +52,18 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 		backupDays = Integer.valueOf(props.getProperty("local_backup_days", "5"));
 	}
 
+	/**
+	 * Constructs a new Local File Video Keeper. It saves videos in local filesystem
+	 * 
+	 * @param memcachedClient Instance of memcached.
+	 * @param logger Implementation of SimpleLogger
+	 * @param byteBufAllocator Allocator used to get memory buffers for compression
+	 * @param doCompression If it keeps videos after or before compression
+	 * @param videoBitrate Bitrate used in compression in bytes/s
+	 */
 	@Inject
-	public LocalFileVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, ByteBufAllocator byteBufAllocator, boolean doCompression) {
-		super(memcachedClient, logger, byteBufAllocator, doCompression);
+	public LocalFileVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, ByteBufAllocator byteBufAllocator, boolean doCompression, int videoBitrate) {
+		super(memcachedClient, logger, byteBufAllocator, doCompression, videoBitrate);
 	}
 
 	@Override

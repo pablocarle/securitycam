@@ -96,9 +96,18 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 	}
 	
 	
+	/**
+	 * Constructs a new Drive Video Keeper
+	 * 
+	 * @param memcachedClient Instance of memcached.
+	 * @param logger Implementation of SimpleLogger
+	 * @param byteBufAllocator Allocator used to get memory buffers for compression
+	 * @param doCompression If it keeps videos after or before compression
+	 * @param videoBitrate Bitrate used in compression in bytes/s
+	 */
 	@Inject
-	public DriveVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, ByteBufAllocator byteBufAllocator, boolean doCompression) {
-		super(memcachedClient, logger, byteBufAllocator, doCompression);
+	public DriveVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, ByteBufAllocator byteBufAllocator, boolean doCompression, int videoBitrate) {
+		super(memcachedClient, logger, byteBufAllocator, doCompression, videoBitrate);
 	}
 
 	@Override
