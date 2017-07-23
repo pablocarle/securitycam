@@ -55,6 +55,8 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	private VideoKeeper dropboxVideoKeeper;
 
 	private ByteBufAllocator byteBufAllocator;
+	
+	private int maxCapacity;
 
 	@Inject
 	public RTPPacketHandler(SimpleLogger logger,
@@ -84,7 +86,8 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 				throw new RuntimeException("Couldn't find bound rtsp endpoint");
 			}
 		}
-		video = byteBufAllocator.buffer(blockSize * 1024, blockSize * 1024 * 1024);
+		maxCapacity = blockSize * 1024 * 1024;
+		video = byteBufAllocator.buffer(blockSize * 1024, maxCapacity);
 		video.resetWriterIndex();
 		video.resetReaderIndex();
 		if (sps == null && pps == null) {
@@ -128,7 +131,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 		} else if (packet.isEnd()) {
 			packets.add(packet);
 			byte[] frame = frameBuilder.buildFrame(packets);
-			if (video.writableBytes() >= frame.length) {
+			if ((maxCapacity - video.readableBytes()) >= frame.length) {
 				video.writeBytes(frame);
 				if (firstPacket) {
 					firstPacket = false;
