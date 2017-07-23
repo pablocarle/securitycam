@@ -41,6 +41,7 @@ public class H264FU_AFrameBuilder implements FrameBuilder {
 				frame[i] = fragment[j];
 			}
 		}
+		it = null;
 		return frame;
 	}
 }

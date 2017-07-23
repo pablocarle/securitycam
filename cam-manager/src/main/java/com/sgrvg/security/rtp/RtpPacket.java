@@ -5,6 +5,7 @@ import java.util.Arrays;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.util.ReferenceCountUtil;
 
 /**
  * Takes from https://github.com/elasticsoftwarefoundation/elasterix/blob/master/rtp/src/main/java/org/elasticsoftware/rtp/packet/DataPacket.java
@@ -141,6 +142,16 @@ public class RtpPacket implements Comparable<RtpPacket> {
 
 	public ByteBuf getData() {
 		return data;
+	}
+	
+	public void release() {
+		if (contributingSourceIds != null && !contributingSourceIds.isEmpty()) {
+			contributingSourceIds.clear();
+		}
+		if (data != null) {
+			ReferenceCountUtil.release(data);
+		}
+		extensionData = null;
 	}
 	
 	@Override

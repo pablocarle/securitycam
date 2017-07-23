@@ -79,6 +79,14 @@ public class H264RtpPacket extends RtpPacket {
 		}
 	}
 	
+	@Override
+	public void release() {
+		super.release();
+		if (otherVideoData != null) {
+			otherVideoData.release();
+		}
+	}
+	
 	public boolean isStart() {
 		return startBit != 0;
 	}

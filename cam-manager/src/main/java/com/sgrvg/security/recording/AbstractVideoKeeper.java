@@ -2,6 +2,7 @@ package com.sgrvg.security.recording;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -137,7 +138,6 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			logger.debug("Start compression of {} bytes of video", data.length);
 			FFmpegFrameGrabber frameGrabber = null;
 			FFmpegFrameRecorder frameRecorder = null;
-			
 			InputStream is = new ByteArrayInputStream(data);
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream(data.length / 8);
 			try {
@@ -187,8 +187,20 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 						logger.error("Failed closing frameRecorder resource", e);
 					}
 				}
+				try {
+					outputStream.close();
+				} catch (IOException e) {
+					logger.error("Failed closing outputStream resource", e);
+				}
+				try {
+					is.close();
+				} catch (IOException e) {
+					logger.error("Failed closing inputStream resource", e);
+				}
 				is = null;
 				outputStream = null;
+				frameGrabber = null;
+				frameRecorder = null;
 				logger.debug("Finished closing compression resources");
 			}
 		}

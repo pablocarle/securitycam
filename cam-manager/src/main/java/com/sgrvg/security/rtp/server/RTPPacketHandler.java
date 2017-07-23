@@ -1,9 +1,11 @@
 package com.sgrvg.security.rtp.server;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -114,6 +116,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 		}
 		H264RtpPacket packet = new H264RtpPacket(content);
 		doProcessPacket(packet);
+		content.release();
 		lastPacketReceived = System.currentTimeMillis();
 	}
 
@@ -125,7 +128,13 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			if (packets == null) {
 				packets = new TreeSet<>();
 			} else {
+				List<RtpPacket> releasedPackets = packets.stream().map(rtpPacket -> {
+					rtpPacket.release();
+					return rtpPacket;
+				}).collect(Collectors.toList());
+				packets.removeAll(releasedPackets);
 				packets.clear();
+				packets = new TreeSet<>();
 			}
 			packets.add(packet);
 		} else if (packet.isEnd()) {
