@@ -1,11 +1,10 @@
 package com.sgrvg.security.rtp.server;
 
 import java.time.Instant;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -127,12 +126,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			if (packets == null) {
 				packets = new TreeSet<>();
 			} else {
-				List<RtpPacket> releasedPackets = packets.stream().map(rtpPacket -> {
-					rtpPacket.release();
-					return rtpPacket;
-				}).collect(Collectors.toList());
-				packets.removeAll(releasedPackets);
-				packets.clear();
+				clearPackets();
 				packets = new TreeSet<>();
 			}
 			packets.add(packet);
@@ -159,6 +153,17 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 		} else {
 			packets.add(packet);
 		}
+	}
+
+	private void clearPackets() {
+		Iterator<H264RtpPacket> it = packets.iterator();
+		RtpPacket current = null;
+		while (it.hasNext()) {
+			current = it.next();
+			current.release();
+			it.remove();
+		}
+		packets.clear();
 	}
 
 	private void doKeepVideo(final long startTimestamp, final long endTimestamp, final ByteBuf videoBuffer) {
@@ -200,5 +205,16 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	@Override
 	public int hashCode() {
 		return super.hashCode();
+	}
+	
+	void restart() {
+		packets = new TreeSet<>();
+		sps = null;
+		pps = null;
+		if (video != null) {
+			doKeepVideo(startTimestamp, endTimestamp, video);
+			video.release();
+			video = null;
+		}
 	}
 }

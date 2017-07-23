@@ -142,6 +142,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 		                break;
 		            case MEDIA_COMPLETE:
 		            	status = "Upload is complete!";
+		            	break;
 		            case NOT_STARTED:
 		            	status = "Upload has not started yet";
 		            	break;

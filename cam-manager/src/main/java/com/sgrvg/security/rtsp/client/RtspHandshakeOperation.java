@@ -46,6 +46,8 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	private SetupState setupState;
 	private PlayState playState;
 	
+	private Channel channel;
+	
 	private Function<Void, Void> connectionCompleteFunction;
 	private ServerConfigHolder serverConfig;
 
@@ -71,11 +73,21 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 		});
 		future.sync();
 	}
-	
-	public void shutdown() throws Exception {
-		// TODO Teardown + shutdown gracefully
-	}
 
+	void restart() {
+		try {
+			new TeardownCommand(channel, playState).call().sync();
+		} catch (Exception e) {
+			logger.error("Failed while sending TEARDOWN command", e);
+		}
+		sequence = 1;
+		lastCommand = null;
+		optionsState = null;
+		describeState = null;
+		setupState = null;
+		playState = null;
+	}
+	
 	@Override
 	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
 		logger.info("Channel Read Complete");
@@ -128,6 +140,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 				if (connectionCompleteFunction != null) {
 					connectionCompleteFunction.apply(null); // TODO Alguien que represente el estado de configuracion del server
 				}
+				channel = ctx.channel();
 				next = Optional.empty();
 				break;
 			}

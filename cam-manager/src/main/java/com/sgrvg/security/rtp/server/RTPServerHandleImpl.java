@@ -1,6 +1,8 @@
 package com.sgrvg.security.rtp.server;
 
 import java.net.URISyntaxException;
+import java.time.Instant;
+import java.util.Optional;
 
 import com.google.common.base.Strings;
 import com.sgrvg.security.rtp.server.RTPServer.RTPServerTask;
@@ -71,5 +73,23 @@ public final class RTPServerHandleImpl implements RTPServerHandle {
 		} else if (!id.equals(other.id))
 			return false;
 		return true;
+	}
+
+	@Override
+	public boolean receiving() {
+		if (rtpTask.isFailedConnection() || !rtpTask.isSuccessfulConnection()) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public Optional<Instant> getLastReceivedPacket() {
+		return rtpTask.getLastReceivedPacket();
+	}
+
+	@Override
+	public void shutdown() {
+		rtpTask.shutdown();
 	}
 }

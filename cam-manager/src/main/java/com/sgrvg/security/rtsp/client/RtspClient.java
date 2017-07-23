@@ -2,6 +2,9 @@ package com.sgrvg.security.rtsp.client;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -92,8 +95,30 @@ public class RtspClient implements RtspClientInitializer {
 						Thread.sleep(1000 * 10);
 					}
 				}
-				future.channel().closeFuture().sync();
-				logger.info("Channel closed");
+				Instant now = null;
+				Optional<Instant> lastReceivedPacket;
+				boolean reconnect = false;
+				while (true) { //TODO Revisar el tema de receiving()
+					now = Instant.now();
+					if (rtpServer.receiving()) {
+						lastReceivedPacket = rtpServer.getLastReceivedPacket();
+						if (lastReceivedPacket.isPresent() && ChronoUnit.SECONDS.between(now, lastReceivedPacket.get()) > 15) {
+							reconnect = true;
+							break;
+						} else if (lastReceivedPacket.isPresent()) {
+							Thread.sleep(1000 * 10);
+						} else {
+							throw new IllegalStateException("RTPServer is receiving but no last packet info got");
+						}
+					} else {
+						Thread.sleep(1000L);
+					}
+				}
+				if (reconnect) {
+					rtpServer.shutdown();
+					operation.restart();
+					run();
+				}
 			} catch (InterruptedException e) {
 				logger.error("InterruptedException waiting for channel close", e);
 				if (!connected) {
@@ -101,7 +126,7 @@ public class RtspClient implements RtspClientInitializer {
 				}
 			}
 		}
-
+		
 		private ChannelFuture tryConnect() {
 			try {
 				bootstrap = new Bootstrap();

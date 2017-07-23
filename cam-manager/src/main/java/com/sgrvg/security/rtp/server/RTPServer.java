@@ -1,6 +1,8 @@
 package com.sgrvg.security.rtp.server;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -142,6 +144,15 @@ public class RTPServer implements RTPServerInitializer {
 
 		public int getAssignedPort() {
 			return port;
+		}
+		
+		void shutdown() {
+			//Se supone que seguimos conectados
+			rtpPacketHandler.restart();
+		}
+
+		Optional<Instant> getLastReceivedPacket() {
+			return rtpPacketHandler.getLastTimePacketReceived();
 		}
 	}
 }
