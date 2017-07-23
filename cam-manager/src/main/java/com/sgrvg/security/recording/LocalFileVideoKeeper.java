@@ -97,7 +97,7 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 		try (Stream<Path> paths = Files.find(Paths.get(new URI("file://" + basePath)), 2, 
 					(path, attrs) -> {
 						Instant creationTime = attrs.creationTime().toInstant();
-						return String.valueOf(path).endsWith(".264") && creationTime.isAfter(from) && creationTime.isBefore(to);
+						return (String.valueOf(path).endsWith(".264") || String.valueOf(path).endsWith(".mkv")) && creationTime.isAfter(from) && creationTime.isBefore(to);
 					})) {
 			List<Boolean> results = paths
 					.filter(path -> !Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS))
