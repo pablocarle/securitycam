@@ -145,7 +145,6 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				lock = false;
 			}
 			logger.info("Video keep task finished for keeper {}", getID());
-			System.gc();
 		}
 
 		private byte[] compressVideo(byte[] data) {
