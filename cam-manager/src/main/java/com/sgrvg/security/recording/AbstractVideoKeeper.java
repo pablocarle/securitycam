@@ -137,11 +137,11 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				lock = true;
 				Date lastCleanup = null;
 				try {
-					lastCleanup = (Date) memcachedClient.get(KEY_LAST_CLEANUP);
+					lastCleanup = (Date) memcachedClient.get(getID() + KEY_LAST_CLEANUP);
+					checkDateAndCleanup(lastCleanup);
 				} catch (Exception e) {
-					logger.error("Failed getting last cleanup key from memcached client", e);
+					logger.error("Failed executing cleanup of keeper {}", e, getID());
 				}
-				checkDateAndCleanup(lastCleanup);
 				lock = false;
 			}
 			logger.info("Video keep task finished for keeper {}", getID());
@@ -227,12 +227,12 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 						ZonedDateTime.now());
 				if (days >= 1) {
 					doCleanup(lastCleanup);
-					memcachedClient.replace(KEY_LAST_CLEANUP, 3600 * 24 * 2, new Date());
+					memcachedClient.replace(getID() + KEY_LAST_CLEANUP, 3600 * 24 * 2, new Date());
 					logger.info("Cleanup with {} keeper took {} seconds", getID(), ChronoUnit.SECONDS.between(begin, Instant.now()));
 				}
 			} else {
 				doCleanup(lastCleanup);
-				memcachedClient.set(KEY_LAST_CLEANUP, 3600 * 24 * 2, new Date());
+				memcachedClient.set(getID() + KEY_LAST_CLEANUP, 3600 * 24 * 2, new Date());
 				logger.info("Cleanup with {} keeper took {} seconds", getID(), ChronoUnit.SECONDS.between(begin, Instant.now()));
 			}
 		}

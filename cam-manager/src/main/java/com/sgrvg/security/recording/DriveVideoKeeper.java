@@ -11,12 +11,8 @@ import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.Period;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -206,19 +202,23 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 	protected void doCleanup(Date lastCleanup) {
 		Instant from = Instant.now().minus(Period.ofDays(30));
 		Instant to = Instant.now().minus(Period.ofDays(backupDays));
+		logger.info("Delete files from Drive from {} to {}", from, to);
 		doCleanup(from, to);
 	}
 	
 	private void doCleanup(Instant from, Instant to) {
 		FileList filesToDelete = findFilesToDelete(from, to);
+		logger.info("Found {} files to delete from Drive", filesToDelete.getFiles().size());
 		filesToDelete.getFiles().stream().forEach(this::deleteFile);
 	}
 
 	private FileList findFilesToDelete(Instant from, Instant to) {
 		try {
 			Drive.Files.List listRequest = drive.files().list();
-			return listRequest.setQ("'" + MAIN_FOLDER_ID + "' in parents and modifiedTime >= " + formatInstant(from) 
-					+ " and modifiedTime <= " + formatInstant(to))
+			String q = "'" + MAIN_FOLDER_ID + "' in parents and modifiedTime >= '" + formatInstant(from) 
+			+ "' and modifiedTime <= '" + formatInstant(to) + "'";
+			logger.debug("Search for files with Q {}", q);
+			return listRequest.setQ(q)
 				.setFields("nextPageToken, files(id, name)")
 				.setSpaces("drive")
 				.execute();
@@ -228,10 +228,8 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 	}
 	
 	private String formatInstant(Instant to) {
-		DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
-														.withLocale(Locale.UK)
-														.withZone(ZoneId.of("UTC"));
-		return formatter.format(to);
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss");
+		return sdf.format(new Date(to.toEpochMilli()));
 	}
 
 	private void deleteFile(File file) {
