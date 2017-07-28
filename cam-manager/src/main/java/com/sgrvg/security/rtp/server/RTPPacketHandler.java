@@ -50,7 +50,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	private long startTimestamp;
 	private long endTimestamp;
 
-	private long lastPacketReceived = -1L;
+	private volatile long lastPacketReceived = -1L;
 	
 	private VideoKeeper driveVideoKeeper;
 	private VideoKeeper localFileVideoKeeper;
