@@ -1,6 +1,7 @@
 package com.sgrvg.security.rtp.server;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.SortedSet;
@@ -195,6 +196,12 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 		} else {
 			return Optional.of(Instant.ofEpochMilli(lastPacketReceived));
 		}
+	}
+	
+	long getMsSinceLastPacket() {
+		return getLastTimePacketReceived().map(value -> {
+			return Math.abs(ChronoUnit.MILLIS.between(value, Instant.now()));
+		}).orElse(-1L);
 	}
 
 	@Override

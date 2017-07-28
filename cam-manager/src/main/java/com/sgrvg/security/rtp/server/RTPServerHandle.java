@@ -1,8 +1,7 @@
 package com.sgrvg.security.rtp.server;
 
 import java.net.URISyntaxException;
-import java.time.Instant;
-import java.util.Optional;
+import java.time.temporal.ChronoUnit;
 
 public interface RTPServerHandle {
 
@@ -38,16 +37,17 @@ public interface RTPServerHandle {
 	boolean receiving();
 
 	/**
-	 * Get an optional time indicating the time on which the last packet was received
-	 * by this server.
+	 * Get time elapsed since last packet was received.
 	 * 
 	 * @return
 	 */
-	Optional<Instant> getLastReceivedPacket();
+	long getTimeSinceLastPacket(ChronoUnit chronoUnit);
 
 	/**
 	 * Perform a clean shutdown / restart of services
 	 */
 	void shutdown();
+
+	
 	
 }

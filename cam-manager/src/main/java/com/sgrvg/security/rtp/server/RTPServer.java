@@ -36,6 +36,7 @@ public class RTPServer implements RTPServerInitializer {
 	
 	// State
 	private RTPServerTask task;
+	private RtspServerDefinition server;
 	
 	@Inject
 	public RTPServer(SimpleLogger logger, 
@@ -51,6 +52,7 @@ public class RTPServer implements RTPServerInitializer {
 	
 	@Override
 	public RTPServerHandle initialize(RtspServerDefinition server) {
+		this.server = server;
 		task = new RTPServerTask();
 		Thread thread = new Thread(task);
 		thread.start();
@@ -72,6 +74,7 @@ public class RTPServer implements RTPServerInitializer {
 		private int port = serverConfig.getNextPortInRange();
 		private volatile boolean successfulConnection = false;
 		private volatile boolean failedConnection = false;
+		private volatile boolean shutingdown = false;
 		
 		void addConnectionStateListener(RTPConnectionStateListener listener) {
 			listeners.add(listener);
@@ -112,6 +115,20 @@ public class RTPServer implements RTPServerInitializer {
 						logger.info("RTP Server Channel closed");
 					}
 				});
+				logger.debug("RTPServer {} channel is open? {}, active? {}", server, future.channel().isOpen(), future.channel().isActive());
+				long time = -1L;
+				while (future.channel().isOpen() || future.channel().isActive()) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Check connection status of RTP Server {}", server);
+					}
+					if (shutingdown) {
+						time = rtpPacketHandler.getMsSinceLastPacket();
+						if (time < (15 * 1000)) {
+							shutingdown = false;
+						}
+					}
+					Thread.sleep(300);
+				}
 				future.channel().closeFuture().sync();
 			} catch (Exception e) {
 				logger.error("Failed to initialize RTP Server", e);
@@ -147,12 +164,19 @@ public class RTPServer implements RTPServerInitializer {
 		}
 		
 		void shutdown() {
+			//En algun momento alguien va a llamar a esto y entrara en shutdown (no esta
+			// recibiendo datos
 			//Se supone que seguimos conectados
 			rtpPacketHandler.restart();
+			shutingdown = true;
 		}
 
 		Optional<Instant> getLastReceivedPacket() {
 			return rtpPacketHandler.getLastTimePacketReceived();
+		}
+
+		boolean isShutdown() {
+			return shutingdown;
 		}
 	}
 }

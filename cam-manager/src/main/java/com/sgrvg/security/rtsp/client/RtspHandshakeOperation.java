@@ -78,12 +78,12 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 
 	void restart() {
 		try {
-			new TeardownCommand(channel, playState).call().sync();
+			lastCommand = new TeardownCommand(channel, playState);
+			lastCommand.call().sync();
 		} catch (Exception e) {
 			logger.error("Failed while sending TEARDOWN command", e);
 		}
 		sequence = 1;
-		lastCommand = null;
 		optionsState = null;
 		describeState = null;
 		setupState = null;
@@ -148,6 +148,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 			}
 			case TEARDOWN: {
 				next = Optional.empty();
+				logger.info("Received successful TEARDOWN");
 				break;
 			}
 			default: {

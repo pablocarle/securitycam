@@ -2,9 +2,7 @@ package com.sgrvg.security.rtsp.client;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Optional;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -96,17 +94,18 @@ public class RtspClient implements RtspClientInitializer {
 						Thread.sleep(1000 * 10);
 					}
 				}
-				Instant now = null;
-				Optional<Instant> lastReceivedPacket;
 				boolean reconnect = false;
 				while (true) { //The thread remains active checking if it remains receiving data
-					now = Instant.now();
+					logger.debug("Checking connection status for server {}. Receiving? {}", uri, rtpServer.receiving());
 					if (rtpServer.receiving()) {
-						lastReceivedPacket = rtpServer.getLastReceivedPacket();
-						if (lastReceivedPacket.isPresent() && ChronoUnit.SECONDS.between(now, lastReceivedPacket.get()) > 15) {
+						long secondsSinceLastPacket = rtpServer.getTimeSinceLastPacket(ChronoUnit.SECONDS);
+						if (logger.isDebugEnabled()) {
+							logger.debug("Last received packet {} seconds ago", secondsSinceLastPacket);
+						}
+						if (secondsSinceLastPacket > 15L) {
 							reconnect = true;
 							break;
-						} else if (lastReceivedPacket.isPresent()) {
+						} else if (secondsSinceLastPacket >= 0) {
 							Thread.sleep(1000 * 10);
 						} else {
 							logger.info("RTPServer is receiving but no last packet info got");

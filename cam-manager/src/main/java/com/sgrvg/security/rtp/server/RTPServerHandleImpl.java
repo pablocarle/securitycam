@@ -2,7 +2,7 @@ package com.sgrvg.security.rtp.server;
 
 import java.net.URISyntaxException;
 import java.time.Instant;
-import java.util.Optional;
+import java.time.temporal.ChronoUnit;
 
 import com.google.common.base.Strings;
 import com.sgrvg.security.rtp.server.RTPServer.RTPServerTask;
@@ -77,19 +77,23 @@ public final class RTPServerHandleImpl implements RTPServerHandle {
 
 	@Override
 	public boolean receiving() {
-		if (rtpTask.isFailedConnection() || !rtpTask.isSuccessfulConnection()) {
+		if (rtpTask.isFailedConnection() || !rtpTask.isSuccessfulConnection()
+				|| rtpTask.isShutdown()) {
 			return false;
 		}
 		return true;
 	}
 
 	@Override
-	public Optional<Instant> getLastReceivedPacket() {
-		return rtpTask.getLastReceivedPacket();
+	public void shutdown() {
+		rtpTask.shutdown();
 	}
 
 	@Override
-	public void shutdown() {
-		rtpTask.shutdown();
+	public long getTimeSinceLastPacket(ChronoUnit chronoUnit) {
+		return rtpTask.getLastReceivedPacket().map(value -> {
+			return Math.abs(chronoUnit.between(value, Instant.now()));
+		})
+				.orElse(-1L);
 	}
 }
