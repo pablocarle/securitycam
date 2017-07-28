@@ -18,6 +18,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
@@ -25,7 +26,6 @@ import io.netty.handler.codec.rtsp.RtspDecoder;
 import io.netty.handler.codec.rtsp.RtspEncoder;
 
 /**
- * Deberia crear esta clase
  * 
  * @author pabloc
  *
@@ -77,6 +77,7 @@ public class RtspClient implements RtspClientInitializer {
 		private Bootstrap bootstrap;
 		private RTPServerHandle rtpServer;
 		private boolean connected = false;
+		private ChannelPipeline pipeline;
 
 		public RtspClientTask(RTPServerHandle rtpServer) {
 			super();
@@ -98,7 +99,7 @@ public class RtspClient implements RtspClientInitializer {
 				Instant now = null;
 				Optional<Instant> lastReceivedPacket;
 				boolean reconnect = false;
-				while (true) { //TODO Revisar el tema de receiving()
+				while (true) { //The thread remains active checking if it remains receiving data
 					now = Instant.now();
 					if (rtpServer.receiving()) {
 						lastReceivedPacket = rtpServer.getLastReceivedPacket();
@@ -108,13 +109,15 @@ public class RtspClient implements RtspClientInitializer {
 						} else if (lastReceivedPacket.isPresent()) {
 							Thread.sleep(1000 * 10);
 						} else {
-							throw new IllegalStateException("RTPServer is receiving but no last packet info got");
+							logger.info("RTPServer is receiving but no last packet info got");
+							Thread.sleep(1000 * 5);
 						}
 					} else {
 						Thread.sleep(1000L);
 					}
 				}
 				if (reconnect) {
+					logger.info("Lost connection to server {}. Trying to reconnect", uri);
 					rtpServer.shutdown();
 					operation.restart();
 					run();
@@ -128,22 +131,23 @@ public class RtspClient implements RtspClientInitializer {
 		}
 		
 		private ChannelFuture tryConnect() {
+			bootstrap = new Bootstrap();
+			bootstrap.group(workerGroup);
+			bootstrap.channel(NioSocketChannel.class);
+			bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
+			bootstrap.handler(new ChannelInitializer<Channel>() {
+				
+				@Override
+				protected void initChannel(Channel ch) throws Exception {
+					logger.info("RTSP Client Channel Init");
+					pipeline = ch.pipeline();
+					ch.pipeline().addLast("decoder", new RtspDecoder());
+					ch.pipeline().addLast("encoder", new RtspEncoder());
+					ch.pipeline().addLast(new HttpObjectAggregator(65536));
+					ch.pipeline().addLast("handler", operation);
+				}
+			});
 			try {
-				bootstrap = new Bootstrap();
-				bootstrap.group(workerGroup);
-				bootstrap.channel(NioSocketChannel.class);
-				bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
-				bootstrap.handler(new ChannelInitializer<Channel>() {
-
-					@Override
-					protected void initChannel(Channel ch) throws Exception {
-						logger.info("RTSP Client Channel Init");
-						ch.pipeline().addLast("decoder", new RtspDecoder());
-						ch.pipeline().addLast("encoder", new RtspEncoder());
-						ch.pipeline().addLast(new HttpObjectAggregator(65536));
-						ch.pipeline().addLast("handler", operation);
-					}
-				});
 				
 				ChannelFuture future = bootstrap.connect(uri.getHost(), uri.getPort()).sync();
 				future.channel().closeFuture().addListener(closeFuture -> {
@@ -159,6 +163,14 @@ public class RtspClient implements RtspClientInitializer {
 			} catch (Exception e) {
 				logger.error("Failed to stablish a connection with rtsp server {}", e, uri);
 				connected = false;
+				if (pipeline != null) {
+					try {
+						logger.debug("Closing PIPELINE");
+						pipeline.close().sync();
+					} catch (InterruptedException e1) {
+						return null;
+					}
+				}
 				return null;
 			}
 		}

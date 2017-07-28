@@ -79,10 +79,6 @@ public class RtspClientMain {
 			rtpServerInstances.add(rtpServer);
 			RtspClientHandle rtspClient = rtspClientInitializer.initialize(serverDefinition, rtpServer); 
 			rtspClientInstances.add(rtspClient);
-			/*rtspClient.onDisconnect(server -> {
-				//TODO Eliminar lo que quede, hacer shutdown correcto.
-				initialize(server);
-			});*/
 		} catch (InterruptedException | RTPServerInitializationException e) {
 			logger.error("Failed to initialize server {}", e, serverDefinition);
 		}

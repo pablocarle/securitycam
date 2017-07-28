@@ -11,6 +11,7 @@ import com.sgrvg.security.rtp.server.RTPServerDefinition;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -22,6 +23,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.CharsetUtil;
 
+@Sharable
 public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObject> {
 
 	/*
