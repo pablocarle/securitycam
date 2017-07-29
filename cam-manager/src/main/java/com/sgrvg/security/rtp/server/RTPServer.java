@@ -75,6 +75,7 @@ public class RTPServer implements RTPServerInitializer {
 		private volatile boolean successfulConnection = false;
 		private volatile boolean failedConnection = false;
 		private volatile boolean shutingdown = false;
+		private boolean firstShutdownCheck = true;
 		
 		void addConnectionStateListener(RTPConnectionStateListener listener) {
 			listeners.add(listener);
@@ -122,7 +123,10 @@ public class RTPServer implements RTPServerInitializer {
 						//logger.debug("Check connection status of RTP Server {}", server);
 					}
 					if (shutingdown) {
-						logger.debug("Detected shutdown procedure of {} server", server.getServerName());
+						if (firstShutdownCheck) {
+							logger.debug("Detected shutdown procedure of {} server", server.getServerName());
+							firstShutdownCheck = false;
+						}
 						time = rtpPacketHandler.getMsSinceLastPacket();
 						if (time < (15 * 1000)) { //TODO Config
 							logger.debug("Detected reconnection of {} server", server.getServerName());
@@ -171,6 +175,7 @@ public class RTPServer implements RTPServerInitializer {
 			//Se supone que seguimos conectados
 			rtpPacketHandler.restart();
 			shutingdown = true;
+			firstShutdownCheck = true;
 		}
 
 		Optional<Instant> getLastReceivedPacket() {
