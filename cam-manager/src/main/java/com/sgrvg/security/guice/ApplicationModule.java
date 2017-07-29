@@ -118,7 +118,7 @@ public class ApplicationModule extends AbstractModule {
 	@Provides
 	@Singleton
 	public MemcachedClient getMemcachedClient() throws IOException {
-		return new MemcachedClient(new InetSocketAddress(11211));
+		return new MemcachedClient(new InetSocketAddress("127.0.0.1", 11211));
 	}
 	
 	@Provides
