@@ -119,11 +119,17 @@ public class RtspClient implements RtspClientInitializer {
 					logger.info("Lost connection to server {}. Trying to reconnect", uri);
 					rtpServer.shutdown();
 					operation.restart();
+					connected = false;
 					run();
 				}
 			} catch (InterruptedException e) {
-				logger.error("InterruptedException waiting for channel close", e);
+				logger.error("InterruptedException waiting for channel close. RTSP Server was connected? {}", e, connected);
 				if (!connected) {
+					run();
+				} else {
+					rtpServer.shutdown();
+					operation.restart();
+					connected = false;
 					run();
 				}
 			}

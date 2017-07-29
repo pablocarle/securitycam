@@ -119,15 +119,17 @@ public class RTPServer implements RTPServerInitializer {
 				long time = -1L;
 				while (future.channel().isOpen() || future.channel().isActive()) {
 					if (logger.isDebugEnabled()) {
-						logger.debug("Check connection status of RTP Server {}", server);
+						//logger.debug("Check connection status of RTP Server {}", server);
 					}
 					if (shutingdown) {
+						logger.debug("Detected shutdown procedure of {} server", server.getServerName());
 						time = rtpPacketHandler.getMsSinceLastPacket();
-						if (time < (15 * 1000)) {
+						if (time < (15 * 1000)) { //TODO Config
+							logger.debug("Detected reconnection of {} server", server.getServerName());
 							shutingdown = false;
 						}
 					}
-					Thread.sleep(300);
+					Thread.sleep(500);
 				}
 				future.channel().closeFuture().sync();
 			} catch (Exception e) {
