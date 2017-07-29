@@ -1,5 +1,7 @@
 package com.sgrvg.security.util;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -87,6 +89,9 @@ public final class LoggerService implements SimpleLogger {
 		InputStream is = this.getClass().getClassLoader().getResourceAsStream("logging.properties");
 		Properties props = new Properties();
 		try {
+			if (is == null) {
+				is = new FileInputStream(new File("conf/logging.properties"));
+			}
 			props.load(is);
 		} catch (IOException e) {
 			e.printStackTrace();

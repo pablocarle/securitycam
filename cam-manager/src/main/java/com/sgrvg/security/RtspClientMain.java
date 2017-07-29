@@ -1,6 +1,9 @@
 package com.sgrvg.security;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -38,14 +41,28 @@ public class RtspClientMain {
 		System.setProperty("org.bytedeco.javacpp.maxbytes", "0");
 
 		Properties props = new Properties();
+		InputStream is = null;
 		try {
-			props.load(RtspClientMain.class.getClassLoader().getResourceAsStream("rtsp_servers.properties"));
+			is = RtspClientMain.class.getClassLoader().getResourceAsStream("rtsp_servers.properties");
+			if (is == null) {
+				is = new FileInputStream(new File("conf/rtsp_servers.properties"));
+			}
+			props.load(is);
 			injector = Guice.createInjector(new ApplicationModule());
 			logger = injector.getInstance(SimpleLogger.class);
 			loadServers(props);
 		} catch (IOException e) {
 			System.err.println("Couldn't find resource");
 			e.printStackTrace();
+		} finally {
+			if (is != null) {
+				try {
+					is.close();
+				} catch (IOException e) {
+					System.err.println("Failed while closing properties resource");
+					e.printStackTrace();
+				}
+			}
 		}
 	}
 	

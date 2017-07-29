@@ -1,6 +1,7 @@
 package com.sgrvg.security.recording;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -45,14 +46,19 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 		Properties props = new Properties();
 		InputStream is = getClass().getClassLoader().getResourceAsStream("general.properties");
 		try {
+			if (is == null) {
+				is = new FileInputStream(new java.io.File("conf/general.properties"));
+			}
 			props.load(is);
 		} catch (IOException e) {
 			logger.error("Failed to get default config. Defaults to home directory", e);
 		} finally {
-			try {
-				is.close();
-			} catch (IOException e) {
-				logger.info("Failed to close input stream", e);
+			if (is != null) {
+				try {
+					is.close();
+				} catch (IOException e) {
+					logger.info("Failed to close input stream", e);
+				}
 			}
 		}
 		backupDays = Integer.valueOf(props.getProperty("remote_backup_days", "5"));
@@ -60,7 +66,11 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 	
 	private GoogleCredential credential;
 	{
-		try (InputStream is = getClass().getClassLoader().getResourceAsStream("general.properties")) {
+		InputStream is = getClass().getClassLoader().getResourceAsStream("general.properties");
+		try {
+			if (is == null) {
+				is = new FileInputStream(new java.io.File("conf/general.properties"));
+			}
 			Properties props = new Properties();
 			props.load(is);
 			String keyLocation = props.getProperty(JSON_CREDENTIAL_KEY);
@@ -78,6 +88,14 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 			}
 		} catch (IOException | URISyntaxException | GeneralSecurityException e) {
 			logger.error("Failed to initialize google credentials", e);
+		} finally {
+			if (is != null) {
+				try {
+					is.close();
+				} catch (IOException e) {
+					logger.error("Failed while closing resource", e);
+				}
+			}
 		}
 	}
 	

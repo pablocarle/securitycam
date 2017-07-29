@@ -1,5 +1,7 @@
 package com.sgrvg.security.recording;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -38,14 +40,19 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 		Properties props = new Properties();
 		InputStream is = getClass().getClassLoader().getResourceAsStream("general.properties");
 		try {
+			if (is == null) {
+				is = new FileInputStream(new File("conf/general.properties"));
+			}
 			props.load(is);
 		} catch (IOException e) {
 			logger.error("Failed to get default config. Defaults to home directory", e);
 		} finally {
-			try {
-				is.close();
-			} catch (IOException e) {
-				logger.info("Failed to close input stream", e);
+			if (is != null) {
+				try {
+					is.close();
+				} catch (IOException e) {
+					logger.info("Failed to close input stream", e);
+				}
 			}
 		}
 		basePath = props.getProperty("videos_base_path", "/home/alarm");
