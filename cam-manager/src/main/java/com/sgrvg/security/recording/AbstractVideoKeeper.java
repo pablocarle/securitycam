@@ -10,8 +10,15 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import org.bytedeco.javacpp.avcodec;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
@@ -41,6 +48,9 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	
 	private MemcachedClient memcachedClient;
 	private ExecutorService executor;
+	private ScheduledExecutorService timeoutService;
+
+	private Map<Runnable, ScheduledFuture<?>> executorTimeoutMap;
 	
 	private ByteBufAllocator byteBufAllocator;
 	private int videoBitrate;
@@ -60,6 +70,18 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 		this.memcachedClient = memcachedClient;
 		this.logger = logger;
 		this.executor = Executors.newFixedThreadPool(5);
+		this.timeoutService = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+			final ThreadFactory delegate = Executors.defaultThreadFactory();
+			
+			@Override
+			public Thread newThread(Runnable r) {
+				final Thread result = delegate.newThread(r);
+				result.setName("TimeoutService-" + getID() + "-" + result.getName());
+				result.setDaemon(true);
+				return result;
+			}
+		});
+		this.executorTimeoutMap = new ConcurrentHashMap<>();
 		this.doCompression = doCompression;
 		this.byteBufAllocator = bytebufAllocator;
 		this.videoBitrate = videoBitrate;
@@ -78,16 +100,27 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			memcachedClient.set(key, 3600 * 3, data);
 			video = null;
 			data = null;
-			executor.submit(new VideoKeepTask(key));
+			submitTask(key, startTimestamp, endTimestamp);
 			logger.info("Submitted task with keeper {} and key {}", getID(), key);
 		} catch (Exception e) {
 			logger.error("Failed to keep video. {} bytes data lost", e, video.readableBytes());
 		}
 	}
 	
-	protected abstract void doKeep(String key, byte[] data);
+	private void submitTask(String key, long startTimestamp, long endTimestamp) {
+		Instant from = Instant.ofEpochMilli(startTimestamp);
+		Instant to = Instant.ofEpochMilli(endTimestamp);
+		long timeout = ChronoUnit.SECONDS.between(from, to);
+		
+		Runnable videoKeepTask = new VideoKeepTask(key);
+		Future<?> future = executor.submit(videoKeepTask);
+		ScheduledFuture<?> scheduledFuture = timeoutService.schedule(new TimeoutCheckTask(future, videoKeepTask), timeout, TimeUnit.SECONDS);
+		executorTimeoutMap.put(videoKeepTask, scheduledFuture);
+	}
+
+	protected abstract void doKeep(String key, byte[] data) throws Exception;
 	
-	protected abstract void doCleanup(Date lastCleanup);
+	protected abstract void doCleanup(Date lastCleanup) throws Exception;
 	
 	/**
 	 * Runnable to do keeping and cleanup task
@@ -116,6 +149,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				logger.debug("Deleted key {} from memcached", key);
 			} catch (Exception e) {
 				logger.error("Failed getting key {} from memcached client", e, key);
+				cancelTimeoutTask(e);
 			}
 			if (data != null && data.length > 0) {
 				Instant begin = Instant.now();
@@ -128,7 +162,8 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 					doKeep(key + extension, data);
 					logger.info("Keeping of file with {} keeper took {} seconds", getID(), ChronoUnit.SECONDS.between(begin, Instant.now()));
 				} catch (Exception e) {
-					logger.error("Unhandled exception from keeper {}", e, getID());
+					logger.error("Keeping of file with keeper {} and key {} failed. Data size lost: {} bytes", e, getID(), key, data.length);
+					cancelTimeoutTask(e);
 				} finally {
 					data = null;
 				}
@@ -140,10 +175,12 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 					lastCleanup = (Date) memcachedClient.get(getID() + KEY_LAST_CLEANUP);
 					checkDateAndCleanup(lastCleanup);
 				} catch (Exception e) {
-					logger.error("Failed executing cleanup of keeper {}", e, getID());
+					logger.error("Failed executing cleanup with keeper {}", e, getID());
+					cancelTimeoutTask(e);
 				}
 				lock = false;
 			}
+			cancelTimeoutTask(null);
 			logger.info("Video keep task finished for keeper {}", getID());
 		}
 
@@ -220,7 +257,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			}
 		}
 
-		private void checkDateAndCleanup(Date lastCleanup) {
+		private void checkDateAndCleanup(Date lastCleanup) throws Exception {
 			Instant begin = Instant.now();
 			if (lastCleanup != null) {
 				long days = ChronoUnit.DAYS.between(ZonedDateTime.ofInstant(lastCleanup.toInstant(), ZoneId.systemDefault()), 
@@ -234,6 +271,45 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				doCleanup(lastCleanup);
 				memcachedClient.set(getID() + KEY_LAST_CLEANUP, 3600 * 24 * 2, new Date());
 				logger.info("Cleanup with {} keeper took {} seconds", getID(), ChronoUnit.SECONDS.between(begin, Instant.now()));
+			}
+		}
+		
+		private void cancelTimeoutTask(Throwable t) {
+			if (executorTimeoutMap.containsKey(this)) {
+				try {
+					boolean result = executorTimeoutMap.get(this).cancel(true);
+					logger.info("Cancellation of timeout task due to {} termination of video keep task of keeper {} returned with result {}", t == null ? "successful" : "failed", getID(), result);
+					executorTimeoutMap.remove(this);
+				} catch (Exception e) {
+					logger.error("Failed while cancelling timeout task", e);
+				}
+			} else {
+				logger.debug("Could not find scheduled timeout task for video keep task of keeper {}", getID());
+			}
+		}
+	}
+
+	private class TimeoutCheckTask implements Runnable {
+
+		private Future<?> future;
+		private Runnable videoKeepTask;
+
+		TimeoutCheckTask(Future<?> future, Runnable videoKeepTask) {
+			super();
+			this.future = future;
+			this.videoKeepTask = videoKeepTask;
+		}
+		
+		@Override
+		public void run() {
+			if (future == null) {
+				return;
+			}
+			if (!future.isDone()) {
+				logger.info("Try to cancel task that took too long of keeper {}", getID());
+				boolean result = future.cancel(true);
+				logger.info("Cancellation of task that took too long of keeper {} resulted? {}", getID(), result);
+				executorTimeoutMap.remove(videoKeepTask);
 			}
 		}
 	}

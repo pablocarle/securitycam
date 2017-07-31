@@ -40,7 +40,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 
 	private static final String JSON_CREDENTIAL_KEY = "key_location";
 	private static final String MAIN_FOLDER_ID = "0B4ZhPs6AV4VJLTgxM3B3QTBrY2s";
-	
+
 	private final int backupDays;
 	{
 		Properties props = new Properties();
@@ -63,7 +63,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 		}
 		backupDays = Integer.valueOf(props.getProperty("remote_backup_days", "5"));
 	}
-	
+
 	private GoogleCredential credential;
 	{
 		InputStream is = getClass().getClassLoader().getResourceAsStream("general.properties");
@@ -98,18 +98,18 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 			}
 		}
 	}
-	
+
 	private Drive drive;
 	{
-		 try {
+		try {
 			drive = new Drive(GoogleNetHttpTransport.newTrustedTransport(), 
-						new GsonFactory(), credential);
+					new GsonFactory(), credential);
 		} catch (GeneralSecurityException | IOException e) {
 			logger.error("Failed to initialize DRIVE SERVICE", e);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Constructs a new Drive Video Keeper
 	 * 
@@ -125,7 +125,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 	}
 
 	@Override
-	protected void doKeep(String key, byte[] data) {
+	protected void doKeep(String key, byte[] data) throws Exception {
 		if (credential == null) {
 			logger.warn("GOOGLE CREDENTIAL NOT INITIALIZED");
 			return;
@@ -134,58 +134,54 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 			logger.warn("DRIVE SERVICE IS NOT INITIALIZED");
 			return;
 		}
-		try {
-			File folder = findTodaysFolder().map(file -> file).orElseGet(this::createTodayFolder);
-			
-			File fileMetadata = new File();
-			fileMetadata.setName(key);
-			fileMetadata.setParents(Collections.singletonList(folder.getId()));
-			Drive.Files.Create createRequest = drive.files().create(fileMetadata , new ByteArrayContent("video/H264", data));
-			createRequest.getMediaHttpUploader().setProgressListener(listener -> {
-				if (listener == null) return;
-				String status = null;
-		        switch (listener.getUploadState()) {
-		            case INITIATION_STARTED:
-		            	status = "Initiation started!";
-		                break;
-		            case INITIATION_COMPLETE:
-		            	status = "Initiation completed!";
-		                break;
-		            case MEDIA_IN_PROGRESS:
-		                double percent = listener.getProgress() * 100;
-		                status = "In Progress";
-		                if (logger.isDebugEnabled()) {
-		                	logger.debug("Progress for key {} is {}%", key, String.valueOf(percent));
-		                }
-		                break;
-		            case MEDIA_COMPLETE:
-		            	status = "Upload is complete!";
-		            	break;
-		            case NOT_STARTED:
-		            	status = "Upload has not started yet";
-		            	break;
-		            default:
-		            	status = "Unknown status";
-		            	break;
-		        }
-				logger.info("Progress for upload of file {} is {}", key, status);
-			});
-			createRequest.execute();
-			data = null;
-		} catch (IOException | DriveException e) {
-			logger.error("File upload with key {} failed. Data size lost: {} bytes", e, key, data.length);
-		}
+		File folder = findTodaysFolder().map(file -> file).orElseGet(this::createTodayFolder);
+
+		File fileMetadata = new File();
+		fileMetadata.setName(key);
+		fileMetadata.setParents(Collections.singletonList(folder.getId()));
+		Drive.Files.Create createRequest = drive.files().create(fileMetadata , new ByteArrayContent("video/H264", data));
+		createRequest.getMediaHttpUploader().setProgressListener(listener -> {
+			if (listener == null) return;
+			String status = null;
+			switch (listener.getUploadState()) {
+			case INITIATION_STARTED:
+				status = "Initiation started!";
+				break;
+			case INITIATION_COMPLETE:
+				status = "Initiation completed!";
+				break;
+			case MEDIA_IN_PROGRESS:
+				double percent = listener.getProgress() * 100;
+				status = "In Progress";
+				if (logger.isDebugEnabled()) {
+					logger.debug("Progress for key {} is {}%", key, String.valueOf(percent));
+				}
+				break;
+			case MEDIA_COMPLETE:
+				status = "Upload is complete!";
+				break;
+			case NOT_STARTED:
+				status = "Upload has not started yet";
+				break;
+			default:
+				status = "Unknown status";
+				break;
+			}
+			logger.info("Progress for upload of file {} is {}", key, status);
+		});
+		createRequest.execute();
+		data = null;
 	}
-	
+
 	private Optional<File> findTodaysFolder() {
 		final String todayFolder = getTodayFolderName();
 		try {
 			Drive.Files.List listRequest = drive.files().list();
 			FileList fileList = listRequest.setQ("mimeType='application/vnd.google-apps.folder' and name = '" + todayFolder + "'"
 					+ " and '" + MAIN_FOLDER_ID + "' in parents")
-			.setFields("nextPageToken, files(id, name)")
-			.setSpaces("drive")
-			.execute();
+					.setFields("nextPageToken, files(id, name)")
+					.setSpaces("drive")
+					.execute();
 			if (!fileList.isEmpty()) {
 				logger.info("Found today folder {}. There are {} other hits", todayFolder, fileList.size() - 1);
 				return fileList.getFiles().stream().findFirst();
@@ -196,14 +192,14 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 			throw new DriveException(e);
 		}
 	}
-	
+
 	private File createTodayFolder() {
 		final String todayFolder = getTodayFolderName();
 		File fileMetadata = new File();
 		fileMetadata.setName(todayFolder);
 		fileMetadata.setMimeType("application/vnd.google-apps.folder");
 		fileMetadata.setParents(Collections.singletonList(MAIN_FOLDER_ID));
-		
+
 		try {
 			return drive.files().create(fileMetadata)
 					.setFields("id")
@@ -218,13 +214,13 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 	}
 
 	@Override
-	protected void doCleanup(Date lastCleanup) {
+	protected void doCleanup(Date lastCleanup) throws Exception {
 		Instant from = Instant.now().minus(Period.ofDays(30));
 		Instant to = Instant.now().minus(Period.ofDays(backupDays));
 		logger.info("Delete files from Drive from {} to {}", from, to);
 		doCleanup(from, to);
 	}
-	
+
 	private void doCleanup(Instant from, Instant to) {
 		FileList filesToDelete = findFilesToDelete(from, to);
 		logger.info("Found {} files to delete from Drive", filesToDelete.getFiles().size());
@@ -238,14 +234,14 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 			+ "' and modifiedTime <= '" + formatInstant(to) + "'";
 			logger.debug("Search for files with Q {}", q);
 			return listRequest.setQ(q)
-				.setFields("nextPageToken, files(id, name)")
-				.setSpaces("drive")
-				.execute();
+					.setFields("nextPageToken, files(id, name)")
+					.setSpaces("drive")
+					.execute();
 		} catch (IOException e) {
 			throw new DriveException(e);
 		}
 	}
-	
+
 	private String formatInstant(Instant to) {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss");
 		return sdf.format(new Date(to.toEpochMilli()));

@@ -10,3 +10,8 @@ rtspserver/
 *.pcapng
 
 *.log
+
+*.class
+*.jar
+
+security-cam-8cbb63203b82.json

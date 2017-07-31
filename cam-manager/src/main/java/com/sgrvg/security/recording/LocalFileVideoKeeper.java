@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -74,33 +73,29 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 	}
 
 	@Override
-	protected void doKeep(String key, byte[] data) {
+	protected void doKeep(String key, byte[] data) throws Exception {
 		final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd");
-		try {
-			final String path = "file://" + basePath + "/" + SDF.format(new Date());
-			final String filePath = path + "/" + key;
-			Path directory = Paths.get(new URI(path));
-			if (Files.notExists(directory, LinkOption.NOFOLLOW_LINKS)) {
-				Files.createDirectory(directory);
-				logger.info("Created directory {}", directory);
-			}
-			URI fileURI = new URI(filePath);
-			Files.write(Paths.get(fileURI), data, StandardOpenOption.CREATE_NEW);
-			logger.info("Written to file {}, {} bytes", fileURI, data.length);
-			data = null;
-		} catch (IOException | URISyntaxException e) {
-			logger.error("Failed to save local file with key {}. Data size lost: {} bytes", e, key, data.length);
+		final String path = "file://" + basePath + "/" + SDF.format(new Date());
+		final String filePath = path + "/" + key;
+		Path directory = Paths.get(new URI(path));
+		if (Files.notExists(directory, LinkOption.NOFOLLOW_LINKS)) {
+			Files.createDirectory(directory);
+			logger.info("Created directory {}", directory);
 		}
+		URI fileURI = new URI(filePath);
+		Files.write(Paths.get(fileURI), data, StandardOpenOption.CREATE_NEW);
+		logger.info("Written to file {}, {} bytes", fileURI, data.length);
+		data = null;
 	}
 
 	@Override
-	protected void doCleanup(Date lastCleanup) {
+	protected void doCleanup(Date lastCleanup) throws Exception {
 		Instant from = Instant.now().minus(Period.ofDays(30));
 		Instant to = Instant.now().minus(Period.ofDays(backupDays));
 		doCleanup(from, to);
 	}
 	
-	private void doCleanup(Instant from, Instant to) {
+	private void doCleanup(Instant from, Instant to) throws Exception {
 		try (Stream<Path> paths = Files.find(Paths.get(new URI("file://" + basePath)), 2, 
 					(path, attrs) -> {
 						Instant creationTime = attrs.creationTime().toInstant();
@@ -120,8 +115,6 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 				
 			logger.info("{} Files successfully deleted", results.stream().mapToInt(result -> result ? 1 : 0).sum());
 			logger.info("{} Files failed to delete", results.stream().mapToInt(result -> result ? 0 : 1).sum());
-		} catch (IOException | URISyntaxException e) {
-			logger.error("Failed to delete files in period between {} and {}", e, from, to);
 		}
 	}
 
