@@ -47,7 +47,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	private ByteBuf video;
 	private boolean firstPacket = false;
 
-	private long startTimestamp;
+	private long startTimestamp = System.currentTimeMillis();
 	private long endTimestamp;
 
 	private volatile long lastPacketReceived = -1L;
