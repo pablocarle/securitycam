@@ -2,6 +2,9 @@ package com.sgrvg.security.rtsp;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 import com.google.common.base.Strings;
@@ -21,7 +24,7 @@ public class RtspServerDefinition {
 	private String host;
 	private int port;
 	private String endpoint;
-	private KeepType keepType;
+	private final List<KeepType> keepTypes = new ArrayList<>();
 	private int startHourSampling = 0;
 	private int endHourSampling = 0;
 	private String serverName;
@@ -41,19 +44,24 @@ public class RtspServerDefinition {
 		port = Integer.valueOf(props.getProperty(serverName + "_port"));
 		endpoint = props.getProperty(serverName + "_path");
 		String saveType = props.getProperty(serverName + "_save_type", "");
-		switch (saveType.toLowerCase()) {
-		case "local":
-			this.keepType = KeepType.LOCAL_FILE;
-			break;
-		case "cloud_drive":
-			this.keepType = KeepType.CLOUD_DRIVE;
-			break;
-		case "cloud_dropbox":
-			this.keepType = KeepType.CLOUD_DROPBOX;
-			break;
-		default:
-			throw new RTSPInitializationException("Unrecognized save type " + saveType);
-		}
+		String[] saveTypeTokens = saveType.split(",");
+		Arrays.stream(saveTypeTokens)
+		.filter(token -> !Strings.isNullOrEmpty(token))
+		.forEach(token -> {
+			switch (token.toLowerCase()) {
+			case "local":
+				keepTypes.add(KeepType.LOCAL_FILE);
+				break;
+			case "cloud_drive":
+				keepTypes.add(KeepType.CLOUD_DRIVE);
+				break;
+			case "cloud_dropbox":
+				keepTypes.add(KeepType.CLOUD_DROPBOX);
+				break;
+			default:
+				throw new RTSPInitializationException("Unrecognized save type " + saveType);
+			}
+		});
 		String samplingHours = props.getProperty(serverName + "_sampling_hours", "");
 		blockSize = Integer.parseInt(props.getProperty(serverName + "_block_size"));
 		if (!Strings.isNullOrEmpty(samplingHours) && samplingHours.split("-").length == 2) {
@@ -79,8 +87,8 @@ public class RtspServerDefinition {
 		return new URI("rtsp://" + host + ":" + port + endpoint);
 	}
 
-	public KeepType getKeepType() {
-		return keepType;
+	public List<KeepType> getKeepTypes() {
+		return keepTypes;
 	}
 
 	public int getStartHourSampling() {
@@ -90,11 +98,11 @@ public class RtspServerDefinition {
 	public int getEndHourSampling() {
 		return endHourSampling;
 	}
-	
+
 	public int getBlockSize() {
 		return blockSize;
 	}
-	
+
 	public String getServerName() {
 		return serverName;
 	}
@@ -104,10 +112,10 @@ public class RtspServerDefinition {
 	}
 
 	public class SessionDescription {
-		
+
 		private byte[] sps;
 		private byte[] pps;
-		
+
 		SessionDescription() {
 			super();
 		}
@@ -165,8 +173,8 @@ public class RtspServerDefinition {
 
 	@Override
 	public String toString() {
-		return "RtspServerDefinition [host=" + host + ", port=" + port + ", endpoint=" + endpoint + ", keepType="
-				+ keepType + ", startHourSampling=" + startHourSampling + ", endHourSampling=" + endHourSampling
+		return "RtspServerDefinition [host=" + host + ", port=" + port + ", endpoint=" + endpoint + ", keepTypes="
+				+ keepTypes + ", startHourSampling=" + startHourSampling + ", endHourSampling=" + endHourSampling
 				+ ", serverName=" + serverName + ", props=" + props + ", blockSize=" + blockSize
 				+ ", sessionDescription=" + sessionDescription + "]";
 	}

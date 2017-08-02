@@ -2,7 +2,9 @@ package com.sgrvg.security.rtp.server;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -14,8 +16,10 @@ import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.VideoKeeper;
 import com.sgrvg.security.h264.FrameBuilder;
 import com.sgrvg.security.h264.H264RtpPacket;
+import com.sgrvg.security.recording.VideoCompressor;
 import com.sgrvg.security.rtp.RtpPacket;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
+import com.sgrvg.security.rtsp.RtspServerDefinition.KeepType;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -57,8 +61,10 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	private VideoKeeper dropboxVideoKeeper;
 
 	private ByteBufAllocator byteBufAllocator;
+	private VideoCompressor videoCompressor;
 	
 	private int maxCapacity;
+
 
 	@Inject
 	public RTPPacketHandler(SimpleLogger logger,
@@ -67,6 +73,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			@Named("drive_keeper") VideoKeeper driveVideoKeeper,
 			@Named("file_keeper") VideoKeeper localFileVideoKeeper,
 			@Named("dropbox_keeper") VideoKeeper dropboxVideoKeeper,
+			VideoCompressor videoCompressor,
 			ByteBufAllocator byteBufAllocator) {
 		super();
 		this.logger = logger;
@@ -76,6 +83,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 		this.localFileVideoKeeper = localFileVideoKeeper;
 		this.dropboxVideoKeeper = dropboxVideoKeeper;
 		this.byteBufAllocator = byteBufAllocator;
+		this.videoCompressor = videoCompressor;
 		logger.info("Constructed RTPPacketHandler");
 	}
 
@@ -168,8 +176,15 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	}
 
 	private void doKeepVideo(final long startTimestamp, final long endTimestamp, final ByteBuf videoBuffer) {
-		Optional<RtspServerDefinition> definition = serverConfig.getRtspEndpoint(this);
+		final Optional<RtspServerDefinition> definition = serverConfig.getRtspEndpoint(this);
 		if (definition.isPresent()) {
+			final List<KeepType> keepersConfig = definition.get().getKeepTypes();
+			final List<VideoKeeper> keepers = new ArrayList<>(3);
+			keepersConfig.forEach(config -> {
+				
+				//TODO
+			});
+			
 			VideoKeeper keeper = null;
 			switch (definition.get().getKeepType()) {
 			case CLOUD_DRIVE:
