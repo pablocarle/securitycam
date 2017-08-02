@@ -199,7 +199,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			default:
 				throw new RuntimeException("Unrecognized option " + definition.get().getKeepType().name());
 			}
-			keeper.keep(startTimestamp, endTimestamp, definition.get().getServerName(), videoBuffer);
+			keeper.keep(startTimestamp, endTimestamp, definition.get().getServerName(), videoBuffer, definition.get().doCompression());
 		} else {
 			throw new IllegalStateException("Could not find rtsp server definition bound to this handler");
 		}

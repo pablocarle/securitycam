@@ -57,14 +57,11 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	
 	private volatile boolean lock = false;
 
-	private final boolean doCompression;
-
 	@Inject
 	public AbstractVideoKeeper(
 			MemcachedClient memcachedClient,
 			SimpleLogger logger,
 			ByteBufAllocator bytebufAllocator,
-			boolean doCompression,
 			int videoBitrate) {
 		super();
 		this.memcachedClient = memcachedClient;
@@ -82,13 +79,12 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			}
 		});
 		this.executorTimeoutMap = new ConcurrentHashMap<>();
-		this.doCompression = doCompression;
 		this.byteBufAllocator = bytebufAllocator;
 		this.videoBitrate = videoBitrate;
 	}
 	
 	@Override
-	public final void keep(long startTimestamp, long endTimestamp, String name, ByteBuf video) {
+	public final void keep(long startTimestamp, long endTimestamp, String name, ByteBuf video, boolean doCompression) {
 		final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_hhmmss");
 		video.resetReaderIndex();
 		byte[] data = new byte[video.readableBytes()];
@@ -100,19 +96,19 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			memcachedClient.set(key, 3600 * 3, data);
 			video = null;
 			data = null;
-			submitTask(key, startTimestamp, endTimestamp);
+			submitTask(key, startTimestamp, endTimestamp, doCompression);
 			logger.info("Submitted task with keeper {} and key {}", getID(), key);
 		} catch (Exception e) {
 			logger.error("Failed to keep video. {} bytes data lost", e, video.readableBytes());
 		}
 	}
 	
-	private void submitTask(String key, long startTimestamp, long endTimestamp) {
+	private void submitTask(String key, long startTimestamp, long endTimestamp, boolean doCompression) {
 		Instant from = Instant.ofEpochMilli(startTimestamp);
 		Instant to = Instant.ofEpochMilli(endTimestamp);
 		long timeout = ChronoUnit.SECONDS.between(from, to) * 2L;
 		
-		Runnable videoKeepTask = new VideoKeepTask(key);
+		Runnable videoKeepTask = new VideoKeepTask(key, doCompression);
 		Future<?> future = executor.submit(videoKeepTask);
 		ScheduledFuture<?> scheduledFuture = timeoutService.schedule(new TimeoutCheckTask(future, videoKeepTask), timeout, TimeUnit.SECONDS);
 		executorTimeoutMap.put(videoKeepTask, scheduledFuture);
@@ -131,10 +127,12 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	private class VideoKeepTask implements Runnable {
 
 		private String key;
+		private boolean doCompression;
 
-		public VideoKeepTask(String key) {
+		public VideoKeepTask(String key, boolean doCompression) {
 			super();
 			this.key = key;
+			this.doCompression = doCompression;
 		}
 		
 		@Override
