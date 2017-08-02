@@ -106,7 +106,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	private void submitTask(String key, long startTimestamp, long endTimestamp, boolean doCompression) {
 		Instant from = Instant.ofEpochMilli(startTimestamp);
 		Instant to = Instant.ofEpochMilli(endTimestamp);
-		long timeout = ChronoUnit.SECONDS.between(from, to);
+		long timeout = ChronoUnit.SECONDS.between(from, to) * 2;
 		
 		Runnable videoKeepTask = new VideoKeepTask(key, doCompression);
 		Future<?> future = executor.submit(videoKeepTask);
