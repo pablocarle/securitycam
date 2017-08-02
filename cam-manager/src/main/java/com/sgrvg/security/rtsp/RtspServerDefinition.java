@@ -27,6 +27,7 @@ public class RtspServerDefinition {
 	private String serverName;
 	private Properties props;
 	private int blockSize;
+	private boolean compress;
 	private SessionDescription sessionDescription = new SessionDescription();
 
 	public RtspServerDefinition(String serverName, Properties props) {
@@ -61,6 +62,7 @@ public class RtspServerDefinition {
 			this.startHourSampling = Integer.parseInt(hours[0]);
 			this.endHourSampling = Integer.parseInt(hours[1]);
 		}
+		compress = Boolean.parseBoolean(props.getProperty(serverName + "_compress", "false"));
 	}
 
 	public String getHost() {
@@ -101,6 +103,10 @@ public class RtspServerDefinition {
 
 	public SessionDescription getSessionDescription() {
 		return sessionDescription;
+	}
+	
+	public boolean doCompression() {
+		return compress;
 	}
 
 	public class SessionDescription {

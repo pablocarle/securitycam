@@ -120,8 +120,8 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 	 * @param videoBitrate Bitrate used in compression in bytes/s
 	 */
 	@Inject
-	public DriveVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, ByteBufAllocator byteBufAllocator, boolean doCompression, int videoBitrate) {
-		super(memcachedClient, logger, byteBufAllocator, doCompression, videoBitrate);
+	public DriveVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, ByteBufAllocator byteBufAllocator, int videoBitrate) {
+		super(memcachedClient, logger, byteBufAllocator, videoBitrate);
 	}
 
 	@Override

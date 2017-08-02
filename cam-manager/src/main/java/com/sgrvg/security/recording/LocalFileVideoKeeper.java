@@ -68,8 +68,8 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 	 * @param videoBitrate Bitrate used in compression in bytes/s
 	 */
 	@Inject
-	public LocalFileVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, ByteBufAllocator byteBufAllocator, boolean doCompression, int videoBitrate) {
-		super(memcachedClient, logger, byteBufAllocator, doCompression, videoBitrate);
+	public LocalFileVideoKeeper(MemcachedClient memcachedClient, SimpleLogger logger, ByteBufAllocator byteBufAllocator, int videoBitrate) {
+		super(memcachedClient, logger, byteBufAllocator, videoBitrate);
 	}
 
 	@Override
