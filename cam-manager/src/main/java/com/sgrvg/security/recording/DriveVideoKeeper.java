@@ -23,6 +23,7 @@ import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
+import com.google.api.services.drive.model.About;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
 import com.google.common.base.Strings;
@@ -104,6 +105,18 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 		try {
 			drive = new Drive(GoogleNetHttpTransport.newTrustedTransport(), 
 					new GsonFactory(), credential);
+			About about = drive.about().get().setFields("storageQuota, user").execute();
+			logger.info("*************** DRIVE ***************\n"
+					+ "Current User Name: {}\n"
+					+ "Total quota (Mbytes): {}\n"
+					+ "Used quota (Mbytes): {}\n"
+					+ "Used quota of trash (Mbytes): {}\n"
+					+ "Free space (Mbytes): {}", about.getUser().getEmailAddress() + "|" + about.getUser().getDisplayName(),
+					(about.getStorageQuota().getLimit() / 1024) / 1024,
+					(about.getStorageQuota().getUsageInDrive() / 1024) / 1024,
+					(about.getStorageQuota().getUsageInDriveTrash() / 1024) / 1024,
+					((about.getStorageQuota().getLimit() - about.getStorageQuota().getUsageInDrive() - about.getStorageQuota().getUsageInDriveTrash()) / 1024) / 1024);
+			
 		} catch (GeneralSecurityException | IOException e) {
 			logger.error("Failed to initialize DRIVE SERVICE", e);
 		}
