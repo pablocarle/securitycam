@@ -95,6 +95,7 @@ public class RtspClient implements RtspClientInitializer {
 					}
 				}
 				boolean reconnect = false;
+				int count = 0;
 				while (true) { //The thread remains active checking if it remains receiving data
 					logger.debug("Checking connection status for server {}. Receiving? {}", uri, rtpServer.receiving());
 					if (rtpServer.receiving()) {
@@ -109,6 +110,10 @@ public class RtspClient implements RtspClientInitializer {
 							Thread.sleep(1000 * 10);
 						} else {
 							logger.info("RTPServer is receiving but no last packet info got");
+							if (++count > 2) {
+								reconnect = true;
+								break;
+							}
 							Thread.sleep(1000 * 5);
 						}
 					} else {

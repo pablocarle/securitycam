@@ -128,7 +128,7 @@ public class RTPServer implements RTPServerInitializer {
 							firstShutdownCheck = false;
 						}
 						time = rtpPacketHandler.getMsSinceLastPacket();
-						if (time < (15 * 1000)) { //TODO Config
+						if (time < (15 * 1000)) {
 							logger.debug("Detected reconnection of {} server", server.getServerName());
 							shutingdown = false;
 						}

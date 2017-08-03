@@ -66,7 +66,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 		super();
 		this.memcachedClient = memcachedClient;
 		this.logger = logger;
-		this.executor = Executors.newFixedThreadPool(5);
+		this.executor = Executors.newFixedThreadPool(3);
 		this.timeoutService = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
 			final ThreadFactory delegate = Executors.defaultThreadFactory();
 			
