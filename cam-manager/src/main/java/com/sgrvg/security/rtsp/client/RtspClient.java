@@ -56,10 +56,10 @@ public class RtspClient implements RtspClientInitializer {
 			rtspTask = new RtspClientTask(rtpServer);
 			serverConfig.bind(rtpServer, serverDefinition);
 			Thread thread = new Thread(rtspTask);
+			thread.setName(serverDefinition.getServerName() + "RTSPClient-" + thread.getName());
 			thread.start();
 		} catch (URISyntaxException e1) {
-			System.err.println("Failed to create rtsp client task");
-			e1.printStackTrace();
+			logger.error("Failed to create RTSP Client task", e1);
 		}
 		return new RtspClientHandleImpl(rtspTask);
 	}
@@ -97,11 +97,11 @@ public class RtspClient implements RtspClientInitializer {
 				boolean reconnect = false;
 				int count = 0;
 				while (true) { //The thread remains active checking if it remains receiving data
-					logger.debug("Checking connection status for server {}. Receiving? {}", uri, rtpServer.receiving());
+					logger.trace("Checking connection status for server {}. Receiving? {}", uri, rtpServer.receiving());
 					if (rtpServer.receiving()) {
 						long secondsSinceLastPacket = rtpServer.getTimeSinceLastPacket(ChronoUnit.SECONDS);
-						if (logger.isDebugEnabled()) {
-							logger.debug("Last received packet {} seconds ago", secondsSinceLastPacket);
+						if (logger.isTraceEnabled()) {
+							logger.trace("Last received packet {} seconds ago", secondsSinceLastPacket);
 						}
 						if (secondsSinceLastPacket > 15L) {
 							reconnect = true;
@@ -163,7 +163,7 @@ public class RtspClient implements RtspClientInitializer {
 				future.channel().closeFuture().addListener(closeFuture -> {
 					logger.info("Operation Complete: Channel closed");
 					if (!closeFuture.isSuccess()) {
-						closeFuture.cause().printStackTrace();
+						logger.error("RTSP Channel Closed [{}]", closeFuture.cause(), uri);
 					}
 				});
 				// Aca estoy conectado, comienzo chain

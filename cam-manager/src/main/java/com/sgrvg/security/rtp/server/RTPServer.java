@@ -55,6 +55,7 @@ public class RTPServer implements RTPServerInitializer {
 		this.server = server;
 		task = new RTPServerTask();
 		Thread thread = new Thread(task);
+		thread.setName(server.getServerName() + "-RTPServer-" + thread.getName());
 		thread.start();
 		RTPServerHandle handle = new RTPServerHandleImpl(server.getServerName(), task, server);
 		serverConfig.bind(handle, rtpPacketHandler);

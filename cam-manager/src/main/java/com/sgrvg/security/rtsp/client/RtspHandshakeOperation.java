@@ -70,7 +70,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 		future.addListener(fut -> {
 			logger.info("{} operation ended with {} status", lastCommand.getRtspMethod().name(), fut.isSuccess());
 			if (!fut.isSuccess()) {
-				fut.cause().printStackTrace();
+				logger.error("{} operation failed", future.cause(), lastCommand.getRtspMethod().name());
 			}
 		});
 		future.sync();
@@ -164,7 +164,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 				public void operationComplete(ChannelFuture future) throws Exception {
 					logger.info("{} operation ended with {} status", nextCommand.getRtspMethod().name(), future.isSuccess());
 					if (!future.isSuccess()) {
-						future.cause().printStackTrace();
+						logger.error("{} operation failed", future.cause(), nextCommand.getRtspMethod().name());
 					}
 					lastCommand = nextCommand;
 				}
