@@ -21,6 +21,7 @@ import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.timeout.WriteTimeoutException;
 import io.netty.util.CharsetUtil;
 
 @Sharable
@@ -105,6 +106,9 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		logger.warn("EXCEPTION CAUGHT", cause);
+		if (cause instanceof WriteTimeoutException) {
+			//TODO Si estoy en medio de un handshake lo interrumpo para que pueda volver a comenzar.
+		} 
 		ctx.close();
 	}
 

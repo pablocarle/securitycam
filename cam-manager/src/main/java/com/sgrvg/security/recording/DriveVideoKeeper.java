@@ -244,7 +244,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 		try {
 			Drive.Files.List listRequest = drive.files().list();
 			String q = "'" + MAIN_FOLDER_ID + "' in parents and modifiedTime >= '" + formatInstant(from) 
-			+ "' and modifiedTime <= '" + formatInstant(to) + "'";
+			+ "' and modifiedTime <= '" + formatInstant(to) + "' and mimeType='application/vnd.google-apps.folder'";
 			logger.debug("Search for files with Q {}", q);
 			return listRequest.setQ(q)
 					.setFields("nextPageToken, files(id, name)")

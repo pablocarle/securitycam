@@ -150,11 +150,11 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			logger.info("Video keep task started for keeper {} with id {}", getID(), key);
 			byte[] data = null;
 			try {
-				logger.debug("Get key {} from memcached", key);
+				logger.trace("Get key {} from memcached", key);
 				data = (byte[]) memcachedClient.get(key); //O lo logro guardar o chau
-				logger.debug("Got key {} from memcached", key);
+				logger.trace("Got key {} from memcached", key);
 				memcachedClient.delete(key);
-				logger.debug("Deleted key {} from memcached", key);
+				logger.trace("Deleted key {} from memcached", key);
 			} catch (Exception e) {
 				logger.error("Failed getting key {} from memcached client", e, key);
 				cancelTimeoutTask(e);
@@ -200,22 +200,22 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			ByteBuf buffer = byteBufAllocator.buffer();
 			OutputStream outputStream = new ByteBufOutputStream(buffer);
 			try {
-				logger.debug("Join try catch block");
+				logger.trace("Join try catch block");
 				frameGrabber = new FFmpegFrameGrabber(is);
 				frameGrabber.setFormat("h264");
 				frameGrabber.setAudioChannels(0);
 				frameRecorder = new FFmpegFrameRecorder(outputStream, 0);
 				
-				logger.debug("Created objects");
+				logger.trace("Created objects");
 				frameGrabber.start();
-				logger.debug("Started frame grabber");
+				logger.trace("Started frame grabber");
 				frameRecorder.setFormat("matroska");
 				frameRecorder.setImageHeight(frameGrabber.getImageHeight());
 				frameRecorder.setImageWidth(frameGrabber.getImageWidth());
 				frameRecorder.setVideoBitrate(videoBitrate);
 				frameRecorder.setVideoCodec(avcodec.AV_CODEC_ID_MPEG4);
 				frameRecorder.start();
-				logger.debug("Started frame recorder");
+				logger.trace("Started frame recorder");
 				Frame frame = null;
 				while ((frame = frameGrabber.grab()) != null) {
 					frameRecorder.record(frame);
@@ -286,7 +286,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			if (executorTimeoutMap.containsKey(this)) {
 				try {
 					boolean result = executorTimeoutMap.get(this).cancel(true);
-					logger.info("Cancellation of timeout task due to {} termination of video keep task of keeper {} returned with result {}", t == null ? "successful" : "failed", getID(), result);
+					logger.debug("Cancellation of timeout task due to {} termination of video keep task of keeper {} returned with result {}", t == null ? "successful" : "failed", getID(), result);
 					executorTimeoutMap.remove(this);
 				} catch (Exception e) {
 					logger.error("Failed while cancelling timeout task", e);
@@ -314,9 +314,9 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				return;
 			}
 			if (!future.isDone()) {
-				logger.info("Try to cancel task that took too long of keeper {}", getID());
+				logger.debug("Try to cancel task that took too long of keeper {}", getID());
 				boolean result = future.cancel(true);
-				logger.info("Cancellation of task that took too long of keeper {} resulted? {}", getID(), result);
+				logger.debug("Cancellation of task that took too long of keeper {} resulted? {}", getID(), result);
 				executorTimeoutMap.remove(videoKeepTask);
 			}
 		}
