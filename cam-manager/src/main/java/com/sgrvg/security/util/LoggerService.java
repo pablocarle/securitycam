@@ -79,6 +79,7 @@ public final class LoggerService implements SimpleLogger {
 	private final boolean warnEnabled;
 	private final boolean errorEnabled;
 	private final boolean debugEnabled;
+	private final boolean traceEnabled;
 
 	@Inject
 	public LoggerService() {
@@ -99,7 +100,8 @@ public final class LoggerService implements SimpleLogger {
 		infoEnabled = Boolean.parseBoolean(props.getProperty("info", "true"));
 		warnEnabled = Boolean.parseBoolean(props.getProperty("warn", "true"));
 		errorEnabled = Boolean.parseBoolean(props.getProperty("error", "true"));
-		debugEnabled = Boolean.parseBoolean(props.getProperty("debug", "true"));
+		debugEnabled = Boolean.parseBoolean(props.getProperty("debug", "false"));
+		traceEnabled = Boolean.parseBoolean(props.getProperty("trace", "false"));
 		entries = new LinkedBlockingDeque<>(Integer.valueOf(props.getProperty("max_log_queue", "1000")));
 		executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
 			final ThreadFactory delegate = Executors.defaultThreadFactory();
@@ -167,6 +169,11 @@ public final class LoggerService implements SimpleLogger {
 		return debugEnabled;
 	}
 	
+	@Override
+	public boolean isTraceEnabled() {
+		return traceEnabled;
+	}
+	
 	@SuppressWarnings("unused")
 	private boolean isCategoryEnabled(Category category) {
 		switch (category) {
@@ -211,6 +218,22 @@ public final class LoggerService implements SimpleLogger {
 	public void debug(String arg0, Throwable arg1, Object... args) {
 		if (isDebugEnabled()) {
 			LogEntry log = new LogEntry(buildMessage(arg0, args), "DEBUG", new Date(), Thread.currentThread().getName(), arg1);
+			entries.add(log);
+		}
+	}
+	
+	@Override
+	public void trace(String arg0, Object... args) {
+		if (isTraceEnabled()) {
+			LogEntry log = new LogEntry(buildMessage(arg0, args), "TRACE", new Date(), Thread.currentThread().getName(), null);
+			entries.add(log);
+		}
+	}
+
+	@Override
+	public void trace(String arg0, Throwable arg1, Object... args) {
+		if (isTraceEnabled()) {
+			LogEntry log = new LogEntry(buildMessage(arg0, args), "TRACE", new Date(), Thread.currentThread().getName(), arg1);
 			entries.add(log);
 		}
 	}

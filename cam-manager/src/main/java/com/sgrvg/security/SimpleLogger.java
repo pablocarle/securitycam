@@ -19,6 +19,10 @@ public interface SimpleLogger {
 	public void debug(String arg0, Object...args);
 
 	public void debug(String arg0, Throwable arg1, Object...args);
+	
+	public void trace(String arg0, Object... args);
+	
+	public void trace(String arg0, Throwable arg1, Object...args);
 
 	public boolean isErrorEnabled();
 
@@ -27,6 +31,8 @@ public interface SimpleLogger {
 	public boolean isWarnEnabled();
 	
 	public boolean isDebugEnabled();
+	
+	public boolean isTraceEnabled();
 
 	public void warn(String arg0, Object...args);
 
