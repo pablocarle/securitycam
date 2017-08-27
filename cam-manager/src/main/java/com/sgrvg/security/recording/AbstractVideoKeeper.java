@@ -25,6 +25,7 @@ import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
 import org.bytedeco.javacv.Frame;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.sgrvg.security.SimpleLogger;
 import com.sgrvg.security.VideoKeeper;
@@ -72,7 +73,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			@Override
 			public Thread newThread(Runnable r) {
 				final Thread result = delegate.newThread(r);
-				result.setName(getID() + "-Pool-" + result.getName());
+				result.setName(getID() + result.getName());
 				result.setDaemon(true);
 				return result;
 			}
@@ -134,7 +135,8 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	 * @author pabloc
 	 *
 	 */
-	private class VideoKeepTask implements Runnable {
+	@VisibleForTesting
+	class VideoKeepTask implements Runnable {
 
 		private String key;
 		private boolean doCompression;
@@ -167,9 +169,6 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 					try {
 						compressedBuffer = compressVideo(data);
 						data = new byte[compressedBuffer.readableBytes()];
-						if (compressedBuffer.refCnt() == 0) {
-							compressedBuffer = compressedBuffer.retain();
-						}
 						compressedBuffer.readBytes(data);
 						extension = ".mkv";
 					} catch (Exception e) {
@@ -264,8 +263,6 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				} catch (IOException e) {
 					logger.error("Failed closing inputStream resource", e);
 				}
-				boolean release = buffer.release();
-				logger.debug("Release of compression buffer with result: {}", release);
 				is = null;
 				outputStream = null;
 				frameGrabber = null;
