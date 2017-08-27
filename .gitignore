@@ -15,3 +15,8 @@ rtspserver/
 *.jar
 
 security-cam-8cbb63203b82.json
+
+*.zip
+*.bin
+*.threads
+*.index

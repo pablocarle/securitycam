@@ -2,7 +2,6 @@ package com.sgrvg.security.rtp.server;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -127,8 +126,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			if (packets == null) {
 				packets = new TreeSet<>();
 			} else {
-				clearPackets();
-				packets = new TreeSet<>();
+				packets.clear();
 			}
 			packets.add(packet);
 		} else if (packet.isEnd()) {
@@ -154,17 +152,6 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 		} else {
 			packets.add(packet);
 		}
-	}
-
-	private void clearPackets() {
-		Iterator<H264RtpPacket> it = packets.iterator();
-		RtpPacket current = null;
-		while (it.hasNext()) {
-			current = it.next();
-			current.release();
-			it.remove();
-		}
-		packets.clear();
 	}
 
 	private void doKeepVideo(final long startTimestamp, final long endTimestamp, final ByteBuf videoBuffer) {

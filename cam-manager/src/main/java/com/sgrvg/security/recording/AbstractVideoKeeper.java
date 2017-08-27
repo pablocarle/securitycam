@@ -163,8 +163,20 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				Instant begin = Instant.now();
 				String extension = ".264";
 				if (doCompression) {
-					data = compressVideo(data);
-					extension = ".mkv";
+					ByteBuf compressedBuffer = null;
+					try {
+						compressedBuffer = compressVideo(data);
+						compressedBuffer.resetReaderIndex();
+						data = new byte[compressedBuffer.readableBytes()];
+						compressedBuffer.readBytes(data);
+						extension = ".mkv";
+					} catch (Exception e) {
+						logger.error("Failed compressing video of size {} bytes. Fallback to raw h264", e, data.length);
+					} finally {
+						if (compressedBuffer != null) {
+							compressedBuffer.release();
+						}
+					}
 				}
 				try {
 					doKeep(key + extension, data);
@@ -192,7 +204,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			logger.info("Video keep task finished for keeper {}", getID());
 		}
 
-		private byte[] compressVideo(byte[] data) {
+		private ByteBuf compressVideo(byte[] data) throws Exception {
 			logger.debug("Start compression of {} bytes of video", data.length);
 			FFmpegFrameGrabber frameGrabber = null;
 			FFmpegFrameRecorder frameRecorder = null;
@@ -220,13 +232,8 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				while ((frame = frameGrabber.grab()) != null) {
 					frameRecorder.record(frame);
 				}
-				byte[] outData = new byte[buffer.readableBytes()];
-				buffer.readBytes(outData);
-				logger.info("compressed {} bytes to {} bytes", data.length, outData.length);
-				return outData;
-			} catch (Exception e) {
-				logger.error("Failed compressing video of size {} bytes. Fallback to raw h264", e, data.length);
-				return data;
+				logger.info("compressed {} bytes to {} bytes", data.length, buffer.readableBytes());
+				return buffer;
 			} catch (Error err) {
 				logger.error("Fail", err);
 				throw err;
