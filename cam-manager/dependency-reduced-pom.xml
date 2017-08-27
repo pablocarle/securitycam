@@ -58,7 +58,7 @@
   <properties>
     <jdk.version>1.8</jdk.version>
     <async.http.client.version>2.0.33</async.http.client.version>
-    <netty.version>4.1.11.Final</netty.version>
+    <netty.version>4.1.15.Final</netty.version>
   </properties>
 </project>
 

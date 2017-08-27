@@ -31,7 +31,7 @@ import io.netty.channel.socket.DatagramPacket;
 public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 
 	private static final byte[] frameHeader = new byte[] {0x00,0x00,0x01};
-	
+
 	private SimpleLogger logger;
 	private FrameBuilder frameBuilder;
 	private ServerConfigHolder serverConfig;
@@ -42,7 +42,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	private byte[] pps;
 
 	private int blockSize = 0;
-	
+
 	private ByteBuf video;
 	private boolean firstPacket = false;
 
@@ -50,13 +50,13 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	private long endTimestamp;
 
 	private volatile long lastPacketReceived = -1L;
-	
+
 	private VideoKeeper driveVideoKeeper;
 	private VideoKeeper localFileVideoKeeper;
 	private VideoKeeper dropboxVideoKeeper;
 
 	private ByteBufAllocator byteBufAllocator;
-	
+
 	private int maxCapacity;
 
 	@Inject
@@ -126,7 +126,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			if (packets == null) {
 				packets = new TreeSet<>();
 			} else {
-				packets.clear();
+				clearPackets();
 			}
 			packets.add(packet);
 		} else if (packet.isEnd()) {
@@ -154,6 +154,11 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 		}
 	}
 
+	private void clearPackets() {
+		packets.forEach(RtpPacket::release);
+		packets.clear();
+	}
+
 	private void doKeepVideo(final long startTimestamp, final long endTimestamp, final ByteBuf videoBuffer) {
 		Optional<RtspServerDefinition> definition = serverConfig.getRtspEndpoint(this);
 		if (definition.isPresent()) {
@@ -176,7 +181,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			throw new IllegalStateException("Could not find rtsp server definition bound to this handler");
 		}
 	}
-	
+
 	public Optional<Instant> getLastTimePacketReceived() {
 		if (lastPacketReceived <= 0) {
 			return Optional.empty();
@@ -184,7 +189,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			return Optional.of(Instant.ofEpochMilli(lastPacketReceived));
 		}
 	}
-	
+
 	long getMsSinceLastPacket() {
 		return getLastTimePacketReceived().map(value -> {
 			return Math.abs(ChronoUnit.MILLIS.between(value, Instant.now()));
@@ -200,7 +205,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	public int hashCode() {
 		return super.hashCode();
 	}
-	
+
 	void restart() {
 		packets = new TreeSet<>();
 		sps = null;
