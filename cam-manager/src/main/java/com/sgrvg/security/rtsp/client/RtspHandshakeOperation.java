@@ -21,6 +21,7 @@ import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.timeout.ReadTimeoutException;
 import io.netty.handler.timeout.WriteTimeoutException;
 import io.netty.util.CharsetUtil;
 
@@ -107,8 +108,16 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		logger.warn("EXCEPTION CAUGHT", cause);
 		if (cause instanceof WriteTimeoutException) {
-			//TODO Si estoy en medio de un handshake lo interrumpo para que pueda volver a comenzar.
-		} 
+			// A write operation could not be done in X seconds
+			logger.error("Timeout writing to channel", cause);
+			throw (WriteTimeoutException)cause;
+		} else if (cause instanceof ReadTimeoutException) {
+			// No inbound traffic for X seconds
+			logger.error("Timeout, no content received for X seconds", cause);
+			throw (ReadTimeoutException)cause;
+		} else {
+			super.exceptionCaught(ctx, cause);
+		}
 		ctx.close();
 	}
 

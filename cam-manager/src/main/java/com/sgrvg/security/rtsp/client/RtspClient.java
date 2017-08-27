@@ -22,6 +22,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.rtsp.RtspDecoder;
 import io.netty.handler.codec.rtsp.RtspEncoder;
+import io.netty.handler.timeout.WriteTimeoutHandler;
 
 /**
  * 
@@ -151,6 +152,7 @@ public class RtspClient implements RtspClientInitializer {
 				protected void initChannel(Channel ch) throws Exception {
 					logger.info("RTSP Client Channel Init");
 					pipeline = ch.pipeline();
+					ch.pipeline().addLast(new WriteTimeoutHandler(10));
 					ch.pipeline().addLast("decoder", new RtspDecoder());
 					ch.pipeline().addLast("encoder", new RtspEncoder());
 					ch.pipeline().addLast(new HttpObjectAggregator(65536));
