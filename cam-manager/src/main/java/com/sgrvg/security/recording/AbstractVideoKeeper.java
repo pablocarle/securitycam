@@ -166,8 +166,10 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 					ByteBuf compressedBuffer = null;
 					try {
 						compressedBuffer = compressVideo(data);
-						compressedBuffer.resetReaderIndex();
 						data = new byte[compressedBuffer.readableBytes()];
+						if (compressedBuffer.refCnt() == 0) {
+							compressedBuffer = compressedBuffer.retain();
+						}
 						compressedBuffer.readBytes(data);
 						extension = ".mkv";
 					} catch (Exception e) {
