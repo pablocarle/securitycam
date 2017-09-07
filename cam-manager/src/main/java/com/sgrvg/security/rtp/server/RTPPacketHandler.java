@@ -32,9 +32,9 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 
 	private static final byte[] frameHeader = new byte[] {0x00,0x00,0x01};
 
-	private SimpleLogger logger;
-	private FrameBuilder frameBuilder;
-	private ServerConfigHolder serverConfig;
+	private final SimpleLogger logger;
+	private final FrameBuilder frameBuilder;
+	private final ServerConfigHolder serverConfig;
 
 	private SortedSet<H264RtpPacket> packets = new TreeSet<>();
 
@@ -51,11 +51,11 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 
 	private volatile long lastPacketReceived = -1L;
 
-	private VideoKeeper driveVideoKeeper;
-	private VideoKeeper localFileVideoKeeper;
-	private VideoKeeper dropboxVideoKeeper;
+	private final VideoKeeper driveVideoKeeper;
+	private final VideoKeeper localFileVideoKeeper;
+	private final VideoKeeper dropboxVideoKeeper;
 
-	private ByteBufAllocator byteBufAllocator;
+	private final ByteBufAllocator byteBufAllocator;
 
 	private int maxCapacity;
 

@@ -31,12 +31,13 @@ import io.netty.handler.timeout.WriteTimeoutHandler;
  */
 public class RtspClient implements RtspClientInitializer {
 
+	private final EventLoopGroup workerGroup;
+	private final RtspHandshakeOperation operation;
+	private final SimpleLogger logger;
+	private final ServerConfigHolder serverConfig;
+
 	private RtspClientTask rtspTask = null;
-	private EventLoopGroup workerGroup;
 	private URI uri;
-	private SimpleLogger logger;
-	private ServerConfigHolder serverConfig;
-	private RtspHandshakeOperation operation;
 	
 	@Inject
 	public RtspClient(SimpleLogger logger,

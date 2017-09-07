@@ -39,10 +39,12 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 
 	public static final String USER_AGENT = "SGRVG CAM PROJECT";
 
+	private final ServerConfigHolder serverConfig;
+	private final SimpleLogger logger;
+	
 	private int sequence = 1;
 	private RtspHandshake lastCommand = null;
 	private URI uri;
-	private SimpleLogger logger;
 	private RTPServerDefinition rtpServer;
 	
 	private OptionsState optionsState;
@@ -53,7 +55,6 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 	private Channel channel;
 	
 	private Function<Void, Void> connectionCompleteFunction;
-	private ServerConfigHolder serverConfig;
 
 	@Inject
 	public RtspHandshakeOperation(

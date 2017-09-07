@@ -29,10 +29,10 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 public class RTPServer implements RTPServerInitializer {
 
 	// Deps
-	private SimpleLogger logger;
-	private EventLoopGroup bossLoopGroup;
-	private ServerConfigHolder serverConfig;
-	private RTPPacketHandler rtpPacketHandler;
+	private final SimpleLogger logger;
+	private final EventLoopGroup bossLoopGroup;
+	private final ServerConfigHolder serverConfig;
+	private final RTPPacketHandler rtpPacketHandler;
 	
 	// State
 	private RTPServerTask task;
