@@ -13,6 +13,7 @@ rtspserver/
 
 *.class
 *.jar
+*.war
 
 security-cam-8cbb63203b82.json
 
@@ -20,3 +21,9 @@ security-cam-8cbb63203b82.json
 *.bin
 *.threads
 *.index
+
+target/
+.settings/
+.project
+.classpath
+

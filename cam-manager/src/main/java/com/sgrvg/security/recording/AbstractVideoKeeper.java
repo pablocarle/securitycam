@@ -45,16 +45,16 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 
 	protected static final String KEY_LAST_CLEANUP = "last_cleanup";
 	
-	protected SimpleLogger logger;
+	protected final SimpleLogger logger;
 	
-	private MemcachedClient memcachedClient;
-	private ExecutorService executor;
-	private ScheduledExecutorService timeoutService;
+	private final MemcachedClient memcachedClient;
+	private final ExecutorService executor;
+	private final ScheduledExecutorService timeoutService;
 
-	private Map<Runnable, ScheduledFuture<?>> executorTimeoutMap;
+	private final Map<Runnable, ScheduledFuture<?>> executorTimeoutMap;
 	
-	private ByteBufAllocator byteBufAllocator;
-	private int videoBitrate;
+	private final ByteBufAllocator byteBufAllocator;
+	private final int videoBitrate;
 	
 	private volatile boolean lock = false;
 
