@@ -12,21 +12,27 @@ import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.Period;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.googleapis.media.MediaHttpUploader;
 import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.util.DateTime;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.About;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
+import com.google.api.services.drive.model.Permission;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.sgrvg.security.SimpleLogger;
 
@@ -99,6 +105,29 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 		}
 	}
 
+	private List<String> shares;
+	{
+		InputStream is = getClass().getClassLoader().getResourceAsStream("general.properties");
+		try {
+			if (is == null) {
+				is = new FileInputStream(new java.io.File("conf/general.properties"));
+			}
+			Properties props = new Properties();
+			props.load(is);
+			shares = ImmutableList.copyOf(props.getProperty("shares", "").split(","));
+		} catch (IOException e) {
+			logger.error("Failed to load shares", e);
+		} finally {
+			if (is != null) {
+				try {
+					is.close();
+				} catch (IOException e) {
+					logger.error("Failed closing resource", e);
+				}
+			}
+		}
+	}
+
 	private Drive drive;
 	{
 		try {
@@ -146,43 +175,72 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 			logger.warn("DRIVE SERVICE IS NOT INITIALIZED");
 			return;
 		}
-		File folder = findTodaysFolder().map(file -> file).orElseGet(this::createTodayFolder);
+		File folder = findTodaysFolder()
+						.orElseGet(this::createTodayFolder);
 
 		File fileMetadata = new File();
 		fileMetadata.setName(key);
 		fileMetadata.setParents(Collections.singletonList(folder.getId()));
 		Drive.Files.Create createRequest = drive.files().create(fileMetadata , new ByteArrayContent("video/H264", data));
-		createRequest.getMediaHttpUploader().setProgressListener(listener -> {
-			if (listener == null) return;
-			String status = null;
-			switch (listener.getUploadState()) {
-			case INITIATION_STARTED:
-				status = "Initiation started!";
-				break;
-			case INITIATION_COMPLETE:
-				status = "Initiation completed!";
-				break;
-			case MEDIA_IN_PROGRESS:
-				double percent = listener.getProgress() * 100;
-				status = "In Progress";
-				if (logger.isDebugEnabled()) {
-					logger.debug("Progress for key {} is {}%", key, String.valueOf(percent));
-				}
-				break;
-			case MEDIA_COMPLETE:
-				status = "Upload is complete!";
-				break;
-			case NOT_STARTED:
-				status = "Upload has not started yet";
-				break;
-			default:
-				status = "Unknown status";
-				break;
-			}
-			logger.info("Progress for upload of file {} is {}", key, status);
-		});
+		createRequest
+			.getMediaHttpUploader()
+			.setProgressListener(uploader -> this.logProgress(key, uploader));
 		createRequest.execute();
-		data = null;
+	}
+	
+	private void logProgress(String key, MediaHttpUploader uploader) {
+		if (uploader == null) return;
+		String status = null;
+		switch (uploader.getUploadState()) {
+		case INITIATION_STARTED:
+			status = "Initiation started!";
+			break;
+		case INITIATION_COMPLETE:
+			status = "Initiation completed!";
+			break;
+		case MEDIA_IN_PROGRESS:
+			double percent;
+			try {
+				percent = uploader.getProgress() * 100;
+			} catch (IOException e) {
+				throw new DriveException(e);
+			}
+			status = "In Progress";
+			if (logger.isDebugEnabled()) {
+				logger.debug("Progress for key {} is {}%", key, String.valueOf(percent));
+			}
+			break;
+		case MEDIA_COMPLETE:
+			status = "Upload is complete!";
+			break;
+		case NOT_STARTED:
+			status = "Upload has not started yet";
+			break;
+		default:
+			status = "Unknown status";
+			break;
+		}
+		logger.info("Progress for upload of file {} is {}", key, status);
+	}
+
+	private void setPermissions(final File file) {
+		shares.forEach(shareEmail -> {
+			try {
+				drive.permissions()
+				.create(
+						file.getId(),
+						new Permission()
+						.setEmailAddress(shareEmail)
+						.setExpirationTime(new DateTime(
+								new Date(Instant.now().plus(backupDays, ChronoUnit.DAYS).toEpochMilli())))
+						.setRole("reader")
+						.setType("user")
+						)
+				.execute();
+			} catch (IOException e) {
+				logger.error("Failed to create permission for {}", e, shareEmail);
+			}
+		});
 	}
 
 	private Optional<File> findTodaysFolder() {
@@ -211,9 +269,11 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 		fileMetadata.setMimeType("application/vnd.google-apps.folder");
 
 		try {
-			return drive.files().create(fileMetadata)
+			File folder = drive.files().create(fileMetadata)
 					.setFields("id")
 					.execute();
+			setPermissions(folder);
+			return folder;
 		} catch (IOException e) {
 			throw new DriveException(e);
 		}
