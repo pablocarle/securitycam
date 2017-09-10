@@ -40,7 +40,6 @@ import net.spy.memcached.MemcachedClient;
 public final class DriveVideoKeeper extends AbstractVideoKeeper {
 
 	private static final String JSON_CREDENTIAL_KEY = "key_location";
-	private static final String MAIN_FOLDER_ID = "0B4ZhPs6AV4VJLTgxM3B3QTBrY2s";
 
 	private final int backupDays;
 	{
@@ -116,7 +115,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 					(about.getStorageQuota().getUsageInDrive() / 1024) / 1024,
 					(about.getStorageQuota().getUsageInDriveTrash() / 1024) / 1024,
 					((about.getStorageQuota().getLimit() - about.getStorageQuota().getUsageInDrive() - about.getStorageQuota().getUsageInDriveTrash()) / 1024) / 1024);
-			
+
 		} catch (GeneralSecurityException | IOException e) {
 			logger.error("Failed to initialize DRIVE SERVICE", e);
 		}
@@ -190,8 +189,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 		final String todayFolder = getTodayFolderName();
 		try {
 			Drive.Files.List listRequest = drive.files().list();
-			FileList fileList = listRequest.setQ("mimeType='application/vnd.google-apps.folder' and name = '" + todayFolder + "'"
-					+ " and '" + MAIN_FOLDER_ID + "' in parents")
+			FileList fileList = listRequest.setQ("mimeType='application/vnd.google-apps.folder' and name = '" + todayFolder + "'")
 					.setFields("nextPageToken, files(id, name)")
 					.setSpaces("drive")
 					.execute();
@@ -211,7 +209,6 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 		File fileMetadata = new File();
 		fileMetadata.setName(todayFolder);
 		fileMetadata.setMimeType("application/vnd.google-apps.folder");
-		fileMetadata.setParents(Collections.singletonList(MAIN_FOLDER_ID));
 
 		try {
 			return drive.files().create(fileMetadata)
@@ -243,7 +240,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 	private FileList findFilesToDelete(Instant from, Instant to) {
 		try {
 			Drive.Files.List listRequest = drive.files().list();
-			String q = "'" + MAIN_FOLDER_ID + "' in parents and modifiedTime >= '" + formatInstant(from) 
+			String q = "modifiedTime >= '" + formatInstant(from) 
 			+ "' and modifiedTime <= '" + formatInstant(to) + "' and mimeType='application/vnd.google-apps.folder'";
 			logger.debug("Search for files with Q {}", q);
 			return listRequest.setQ(q)
