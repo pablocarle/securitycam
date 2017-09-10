@@ -114,7 +114,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 			}
 			Properties props = new Properties();
 			props.load(is);
-			shares = ImmutableList.copyOf(props.getProperty("shares", "").split(","));
+			shares = ImmutableList.copyOf(props.getProperty("share", "").split(","));
 		} catch (IOException e) {
 			logger.error("Failed to load shares", e);
 		} finally {
@@ -224,22 +224,24 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 	}
 
 	private void setPermissions(final File file) {
-		shares.forEach(shareEmail -> {
-			try {
-				drive.permissions()
-				.create(
-						file.getId(),
-						new Permission()
-						.setEmailAddress(shareEmail)
-						.setExpirationTime(new DateTime(
-								new Date(Instant.now().plus(backupDays, ChronoUnit.DAYS).toEpochMilli())))
-						.setRole("reader")
-						.setType("user")
-						)
-				.execute();
-			} catch (IOException e) {
-				logger.error("Failed to create permission for {}", e, shareEmail);
-			}
+		shares.stream()
+			.filter(element -> !Strings.isNullOrEmpty(element))
+			.forEach(shareEmail -> {
+				try {
+					drive.permissions()
+					.create(
+							file.getId(),
+							new Permission()
+							.setEmailAddress(shareEmail)
+							.setExpirationTime(new DateTime(
+									new Date(Instant.now().plus(backupDays, ChronoUnit.DAYS).toEpochMilli())))
+							.setRole("reader")
+							.setType("user")
+							)
+					.execute();
+				} catch (IOException e) {
+					logger.error("Failed to create permission for {}", e, shareEmail);
+				}
 		});
 	}
 
