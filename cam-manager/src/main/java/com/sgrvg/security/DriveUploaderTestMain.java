@@ -81,7 +81,7 @@ public class DriveUploaderTestMain {
 	private void doIt() {
 		//Creo carpeta compartida
 		File fileMetadata = new File();
-		fileMetadata.setName("Test Folder");
+		fileMetadata.setName("Test Folder 2");
 		fileMetadata.setMimeType("application/vnd.google-apps.folder");
 		
 		try {

@@ -52,7 +52,7 @@
 		<dependency>
 			<groupId>com.google.apis</groupId>
 			<artifactId>google-api-services-drive</artifactId>
-			<version>v3-rev76-1.22.0</version>
+			<version>v3-rev81-1.22.0</version>
 			<exclusions>
 				<exclusion>
 					<groupId>com.google.guava</groupId>
