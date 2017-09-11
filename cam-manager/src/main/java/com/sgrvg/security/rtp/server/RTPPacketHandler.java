@@ -114,7 +114,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			logger.info("INVALID RTP PACKET");
 			return;
 		}
-		H264RtpPacket packet = new H264RtpPacket(content);
+		H264RtpPacket packet = new H264RtpPacket(content, byteBufAllocator);
 		doProcessPacket(packet);
 		lastPacketReceived = System.currentTimeMillis();
 	}

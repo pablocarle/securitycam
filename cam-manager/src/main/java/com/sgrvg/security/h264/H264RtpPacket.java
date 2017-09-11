@@ -5,7 +5,7 @@ import java.util.Arrays;
 import com.sgrvg.security.rtp.RtpPacket;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.ByteBufAllocator;
 
 /**
  * This assumes it is packet type 28, FU-A
@@ -15,6 +15,8 @@ import io.netty.buffer.Unpooled;
  */
 public class H264RtpPacket extends RtpPacket {
 
+	private final ByteBufAllocator byteBufAllocator;
+	
 	private ByteBuf otherVideoData;
 	private int fragmentType;
 	private int nalType;
@@ -24,8 +26,9 @@ public class H264RtpPacket extends RtpPacket {
 	private byte firstByte;
 	private byte secondByte;
 	
-	public H264RtpPacket(ByteBuf buffer) throws IndexOutOfBoundsException {
+	public H264RtpPacket(ByteBuf buffer, ByteBufAllocator byteBufAllocator) throws IndexOutOfBoundsException {
 		super(buffer);
+		this.byteBufAllocator = byteBufAllocator;
 		decodeH264Fragment();
 	}
 
@@ -36,9 +39,7 @@ public class H264RtpPacket extends RtpPacket {
 		nalType = secondByte & 0x1F;
 		startBit = secondByte & 0x80;
 		endBit = secondByte & 0x40;
-		byte[] remainingBytes = new byte[data.readableBytes()];
-		data.readBytes(remainingBytes);
-		otherVideoData = Unpooled.wrappedBuffer(remainingBytes);
+		data.readBytes(byteBufAllocator.buffer());
 	}
 
 	@Override
