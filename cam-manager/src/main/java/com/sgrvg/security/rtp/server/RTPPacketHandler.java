@@ -36,6 +36,12 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	private final FrameBuilder frameBuilder;
 	private final ServerConfigHolder serverConfig;
 
+	private final VideoKeeper driveVideoKeeper;
+	private final VideoKeeper localFileVideoKeeper;
+	private final VideoKeeper dropboxVideoKeeper;
+	
+	private final ByteBufAllocator byteBufAllocator;
+
 	private SortedSet<H264RtpPacket> packets = new TreeSet<>();
 
 	private byte[] sps;
@@ -51,11 +57,6 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 
 	private volatile long lastPacketReceived = -1L;
 
-	private final VideoKeeper driveVideoKeeper;
-	private final VideoKeeper localFileVideoKeeper;
-	private final VideoKeeper dropboxVideoKeeper;
-
-	private final ByteBufAllocator byteBufAllocator;
 
 	private int maxCapacity;
 

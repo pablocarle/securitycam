@@ -232,11 +232,11 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 					.create(
 							file.getId(),
 							new Permission()
-							.setEmailAddress(shareEmail)
-							.setExpirationTime(new DateTime(
-									new Date(Instant.now().plus(backupDays, ChronoUnit.DAYS).toEpochMilli())))
-							.setRole("reader")
-							.setType("user")
+								.setEmailAddress(shareEmail)
+								.setExpirationTime(new DateTime(
+										new Date(Instant.now().plus(backupDays, ChronoUnit.DAYS).toEpochMilli())))
+								.setRole("reader")
+								.setType("user")
 							)
 					.execute();
 				} catch (IOException e) {

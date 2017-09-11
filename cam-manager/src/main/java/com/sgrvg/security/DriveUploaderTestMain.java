@@ -22,6 +22,7 @@ import com.google.api.client.util.DateTime;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
+import com.google.api.services.drive.model.FileList;
 import com.google.api.services.drive.model.Permission;
 import com.google.common.base.Strings;
 
@@ -85,21 +86,35 @@ public class DriveUploaderTestMain {
 		fileMetadata.setMimeType("application/vnd.google-apps.folder");
 		
 		try {
-			File folder = drive.files().create(fileMetadata)
-					.setFields("id")
+			
+			Drive.Files.List listRequest = drive.files().list();
+			FileList fileList = listRequest.setQ("mimeType='application/vnd.google-apps.folder'")
+					.setFields("nextPageToken, files(id, name)")
+					.setSpaces("drive")
 					.execute();
 			
-			drive.permissions()
-			.create(
-					folder.getId(),
-					new Permission()
-					.setEmailAddress("pablo.carle@gmail.com")
-					.setExpirationTime(new DateTime(
-							new Date(Instant.now().plus(1, ChronoUnit.DAYS).toEpochMilli())))
-					.setRole("reader")
-					.setType("user")
-					)
-			.execute();
+			if (!fileList.isEmpty()) {
+				System.out.println("Encontre " + fileList.size() + " carpetas. Nombre: " + fileList.getFiles().get(0).getName());
+				fileList.getFiles().stream()
+					.forEach(file -> {
+						try {
+							drive.permissions()
+							.create(
+									file.getId(),
+									new Permission()
+									.setEmailAddress("gesell.cam.manager@gmail.com")
+									.setExpirationTime(new DateTime(
+											new Date(Instant.now().plus(3, ChronoUnit.DAYS).toEpochMilli())))
+									.setRole("reader")
+									.setType("user")
+									)
+							.execute();
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					});
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
