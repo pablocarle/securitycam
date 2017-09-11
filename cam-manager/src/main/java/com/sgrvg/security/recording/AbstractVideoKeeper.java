@@ -235,9 +235,6 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				}
 				logger.info("compressed {} bytes to {} bytes", data.length, buffer.readableBytes());
 				return buffer;
-			} catch (Error err) {
-				logger.error("Fail", err);
-				throw err;
 			} finally {
 				if (frameGrabber != null) {
 					try {
