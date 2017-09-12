@@ -31,7 +31,7 @@ public class RTPPacketHandlerTest {
 	private RTPPacketHandler packetHandler;
 
 	private byte[] data;
-	
+
 	@Mock
 	private SimpleLogger logger;
 	@Mock
@@ -39,7 +39,7 @@ public class RTPPacketHandlerTest {
 	@Mock
 	private ServerConfigHolder serverConfig;
 	@Mock
-	private FrameBuilder frameBuilder; 
+	private FrameBuilder frameBuilder;
 
 	@Before
 	public void setUp() {
@@ -50,7 +50,7 @@ public class RTPPacketHandlerTest {
 		try {
 			data = Files.readAllBytes(Paths.get(new URI("file:///home/pabloc/data3.out")));
 		} catch (IOException | URISyntaxException e) {
-			fail(e.getMessage());
+			data = new byte[0];
 		}
 	}
 
