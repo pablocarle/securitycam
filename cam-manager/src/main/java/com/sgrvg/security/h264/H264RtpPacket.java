@@ -9,7 +9,7 @@ import io.netty.buffer.ByteBufAllocator;
 
 /**
  * This assumes it is packet type 28, FU-A
- * 
+ *
  * @author pabloc
  *
  */
@@ -20,10 +20,10 @@ public class H264RtpPacket extends RtpPacket {
 	private int nalType;
 	private int startBit = 0;
 	private int endBit = 0;
-	
+
 	private byte firstByte;
 	private byte secondByte;
-	
+
 	public H264RtpPacket(final ByteBuf buffer, final ByteBufAllocator byteBufAllocator) throws IndexOutOfBoundsException {
 		super(buffer, byteBufAllocator);
 		decodeH264Fragment();
@@ -36,7 +36,7 @@ public class H264RtpPacket extends RtpPacket {
 		nalType = secondByte & 0x1F;
 		startBit = secondByte & 0x80;
 		endBit = secondByte & 0x40;
-		data.readBytes(byteBufAllocator.buffer());
+		otherVideoData = data.readBytes(byteBufAllocator.buffer());		
 	}
 
 	@Override
@@ -48,10 +48,10 @@ public class H264RtpPacket extends RtpPacket {
 				+ ", extensionHeaderData=" + extensionHeaderData + ", extensionData=" + Arrays.toString(extensionData)
 				+ ", data=" + data + "]";
 	}
-	
+
 	/**
 	 * Get processed data of this fragment's video data;
-	 * 
+	 *
 	 * @return
 	 */
 	public byte[] getVideoData() {
@@ -68,7 +68,7 @@ public class H264RtpPacket extends RtpPacket {
 		}
 		return videoData;
 	}
-	
+
 	public int getVideoDataSize() {
 		if (isStart()) {
 			return 1 + otherVideoData.readableBytes();
@@ -76,7 +76,7 @@ public class H264RtpPacket extends RtpPacket {
 			return otherVideoData.readableBytes();
 		}
 	}
-	
+
 	@Override
 	public void release() {
 		super.release();
@@ -84,15 +84,15 @@ public class H264RtpPacket extends RtpPacket {
 			otherVideoData.release();
 		}
 	}
-	
+
 	public boolean isStart() {
 		return startBit != 0;
 	}
-	
+
 	public boolean isEnd() {
 		return endBit != 0;
 	}
-	
+
 	public boolean isMiddle() {
 		return !isStart() && !isEnd();
 	}
@@ -116,7 +116,7 @@ public class H264RtpPacket extends RtpPacket {
 	public int getEndBit() {
 		return endBit;
 	}
-	
+
 	public byte getFirstByte() {
 		return firstByte;
 	}
