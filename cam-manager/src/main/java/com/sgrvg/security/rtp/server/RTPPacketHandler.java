@@ -93,19 +93,34 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 		video = byteBufAllocator.buffer(blockSize * 1024, maxCapacity);
 		video.resetWriterIndex();
 		video.resetReaderIndex();
-		if (sps == null && pps == null) {
-			Optional<RtspServerDefinition> rtspServer = serverConfig.getRtspEndpoint(this);
-			if (rtspServer.isPresent()) {
-				sps = rtspServer.get().getSessionDescription().getSps();
-				pps = rtspServer.get().getSessionDescription().getPps();
-			} else {
-				throw new RuntimeException("Couldn't find bound rtsp endpoint");
-			}
+		if (sps == null || sps.length == 0) {
+			loadSps();
+		}
+		if (pps == null || pps.length == 0) {
+			loadPps();
 		}
 		video.writeBytes(frameHeader);
 		video.writeBytes(sps);
 		video.writeBytes(frameHeader);
 		video.writeBytes(pps);
+	}
+
+	private void loadPps() {
+		Optional<RtspServerDefinition> rtspServer = serverConfig.getRtspEndpoint(this);
+		if (rtspServer.isPresent()) {
+			pps = rtspServer.get().getSessionDescription().getPps();
+		} else {
+			throw new RuntimeException("Couldn't find bound rtsp endpoint");
+		}
+	}
+
+	private void loadSps() {
+		Optional<RtspServerDefinition> rtspServer = serverConfig.getRtspEndpoint(this);
+		if (rtspServer.isPresent()) {
+			sps = rtspServer.get().getSessionDescription().getSps();
+		} else {
+			throw new RuntimeException("Couldn't find bound rtsp endpoint");
+		}
 	}
 
 	@Override
