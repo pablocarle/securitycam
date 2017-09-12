@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.sgrvg.security.ServerConfigHolder;
@@ -109,7 +110,17 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
-		ByteBuf content = msg.content();
+		channelRead0(msg.content());
+	}
+	
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		logger.error("Exception caught in RTPPacketHandler", cause);
+		super.exceptionCaught(ctx, cause);
+	}
+	
+	@VisibleForTesting
+	protected void channelRead0(ByteBuf content) {
 		if (!RtpPacket.isValidRTPPacket(content)) {
 			logger.info("INVALID RTP PACKET");
 			return;
