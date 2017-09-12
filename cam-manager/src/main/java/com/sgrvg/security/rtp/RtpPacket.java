@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.ReferenceCountUtil;
 
 /**
@@ -15,6 +15,8 @@ import io.netty.util.ReferenceCountUtil;
  */
 public class RtpPacket implements Comparable<RtpPacket> {
 
+	protected final ByteBufAllocator byteBufAllocator;
+	
 	protected RtpVersion version;
 	protected ArrayList<Long> contributingSourceIds;
 	protected boolean marker;
@@ -30,11 +32,9 @@ public class RtpPacket implements Comparable<RtpPacket> {
 		return buffer.readableBytes() >= 12;
 	}
 	
-	public RtpPacket(byte[] data) {
-		this(Unpooled.wrappedBuffer(data));
-	}
-	
-	public RtpPacket(ByteBuf buffer) throws IndexOutOfBoundsException {
+	public RtpPacket(final ByteBuf buffer, final ByteBufAllocator byteBufAllocator) throws IndexOutOfBoundsException {
+		super();
+		this.byteBufAllocator = byteBufAllocator;
 		if (!isValidRTPPacket(buffer)) {
 			throw new IllegalArgumentException("A RTP packet must be at least 12 octets long");
 		}
@@ -73,15 +73,11 @@ public class RtpPacket implements Comparable<RtpPacket> {
 
 		if (!padding) {
 			// No padding used, assume remaining data is the packet
-			byte[] remainingBytes = new byte[buffer.readableBytes()];
-			buffer.readBytes(remainingBytes);
-			this.setData(remainingBytes);
+			this.setData(buffer.readBytes(byteBufAllocator.buffer()));
 		} else {
 			// Padding bit was set, so last byte contains the number of padding octets that should be discarded.
 			short lastByte = buffer.getUnsignedByte(buffer.readerIndex() + buffer.readableBytes() - 1);
-			byte[] dataBytes = new byte[buffer.readableBytes() - lastByte];
-			buffer.readBytes(dataBytes);
-			this.setData(dataBytes);
+			this.setData(buffer.readBytes(byteBufAllocator.buffer(), buffer.readableBytes() - lastByte));
 			// Discard rest of buffer.
 			buffer.skipBytes(buffer.readableBytes());
 		}
@@ -95,11 +91,6 @@ public class RtpPacket implements Comparable<RtpPacket> {
 				+ ", data=" + data + "]";
 	}
 
-	private void setData(byte[] data) {
-		this.data = Unpooled.wrappedBuffer(data);
-	}
-	
-	@SuppressWarnings("unused")
 	private void setData(ByteBuf data) {
 		this.data = data;
 	}

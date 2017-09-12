@@ -15,8 +15,6 @@ import io.netty.buffer.ByteBufAllocator;
  */
 public class H264RtpPacket extends RtpPacket {
 
-	private final ByteBufAllocator byteBufAllocator;
-	
 	private ByteBuf otherVideoData;
 	private int fragmentType;
 	private int nalType;
@@ -26,9 +24,8 @@ public class H264RtpPacket extends RtpPacket {
 	private byte firstByte;
 	private byte secondByte;
 	
-	public H264RtpPacket(ByteBuf buffer, ByteBufAllocator byteBufAllocator) throws IndexOutOfBoundsException {
-		super(buffer);
-		this.byteBufAllocator = byteBufAllocator;
+	public H264RtpPacket(final ByteBuf buffer, final ByteBufAllocator byteBufAllocator) throws IndexOutOfBoundsException {
+		super(buffer, byteBufAllocator);
 		decodeH264Fragment();
 	}
 
