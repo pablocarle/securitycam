@@ -30,13 +30,14 @@ public class H264RtpPacket extends RtpPacket {
 	}
 
 	private void decodeH264Fragment() {
-		firstByte = data.readByte();
-		fragmentType = firstByte & 0x1F;
-		secondByte = data.readByte();
-		nalType = secondByte & 0x1F;
-		startBit = secondByte & 0x80;
-		endBit = secondByte & 0x40;
-		otherVideoData = data.readBytes(byteBufAllocator.buffer());		
+		this.firstByte = data.readByte();
+		this.fragmentType = firstByte & 0x1F;
+		this.secondByte = data.readByte();
+		this.nalType = secondByte & 0x1F;
+		this.startBit = secondByte & 0x80;
+		this.endBit = secondByte & 0x40;
+		this.otherVideoData = byteBufAllocator.buffer(data.readableBytes());
+		this.data.readBytes(otherVideoData);
 	}
 
 	@Override

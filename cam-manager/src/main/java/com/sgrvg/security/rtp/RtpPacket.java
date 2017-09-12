@@ -73,11 +73,15 @@ public class RtpPacket implements Comparable<RtpPacket> {
 
 		if (!padding) {
 			// No padding used, assume remaining data is the packet
-			this.setData(buffer.readBytes(byteBufAllocator.buffer()));
+			ByteBuf data = byteBufAllocator.buffer(buffer.readableBytes());
+			buffer.readBytes(data);
+			this.setData(data);
 		} else {
 			// Padding bit was set, so last byte contains the number of padding octets that should be discarded.
 			short lastByte = buffer.getUnsignedByte(buffer.readerIndex() + buffer.readableBytes() - 1);
-			this.setData(buffer.readBytes(byteBufAllocator.buffer(), buffer.readableBytes() - lastByte));
+			ByteBuf data = byteBufAllocator.buffer(buffer.readableBytes() - lastByte);
+			buffer.readBytes(data, buffer.readableBytes() - lastByte);
+			this.setData(data);
 			// Discard rest of buffer.
 			buffer.skipBytes(buffer.readableBytes());
 		}
