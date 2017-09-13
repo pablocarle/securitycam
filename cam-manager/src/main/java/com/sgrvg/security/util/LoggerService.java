@@ -24,9 +24,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.asynchttpclient.AsyncHttpClient;
-import org.asynchttpclient.AsyncHttpClientConfig;
-import org.asynchttpclient.DefaultAsyncHttpClient;
-import org.asynchttpclient.DefaultAsyncHttpClientConfig;
 import org.asynchttpclient.ListenableFuture;
 import org.asynchttpclient.Response;
 import org.asynchttpclient.cookie.Cookie;
@@ -74,6 +71,7 @@ public final class LoggerService implements SimpleLogger {
 
 	private final BlockingQueue<LogEntry> entries;
 	private final ExecutorService executor;
+	private final AsyncHttpClient http;
 
 	private final boolean infoEnabled;
 	private final boolean warnEnabled;
@@ -82,8 +80,9 @@ public final class LoggerService implements SimpleLogger {
 	private final boolean traceEnabled;
 
 	@Inject
-	public LoggerService() {
+	public LoggerService(AsyncHttpClient http) {
 		super();
+		this.http = http;
 	}
 
 	{
@@ -310,18 +309,8 @@ public final class LoggerService implements SimpleLogger {
 
 	private class LogSendTask implements Runnable {
 
-		private AsyncHttpClient http;
 		private boolean authenticated = false;
 		private List<Cookie> cookies = new ArrayList<>();
-
-		{
-			AsyncHttpClientConfig cf = new DefaultAsyncHttpClientConfig.Builder()
-					.setUserAgent("SimpleLogger - CAM SECURITY")
-					.setFollowRedirect(false)
-					.build();
-			
-			http = new DefaultAsyncHttpClient(cf);
-		}
 
 		@Override
 		public void run() {

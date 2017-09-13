@@ -40,7 +40,7 @@ public class RTPServer implements RTPServerInitializer {
 	
 	@Inject
 	public RTPServer(SimpleLogger logger, 
-			@Named("rtp_server_boss") EventLoopGroup bossLoopGroup,
+			@Named("default_worker_group") EventLoopGroup bossLoopGroup,
 			ServerConfigHolder serverConfig,
 			RTPPacketHandler rtpPacketHandler) {
 		super();
