@@ -33,6 +33,7 @@ import com.sgrvg.security.VideoKeeper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.Unpooled;
 import net.spy.memcached.MemcachedClient;
 
 /**
@@ -125,7 +126,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 		executorTimeoutMap.put(videoKeepTask, scheduledFuture);
 	}
 
-	protected abstract void doKeep(String key, byte[] data) throws Exception;
+	protected abstract void doKeep(String key, ByteBuf buffer) throws Exception;
 	
 	protected abstract void doCleanup(Date lastCleanup) throws Exception;
 	
@@ -164,29 +165,27 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			if (data != null && data.length > 0) {
 				Instant begin = Instant.now();
 				String extension = ".264";
+				ByteBuf buffer = null;
 				if (doCompression) {
-					ByteBuf compressedBuffer = null;
 					try {
-						compressedBuffer = compressVideo(data);
-						data = new byte[compressedBuffer.readableBytes()];
-						compressedBuffer.readBytes(data);
+						buffer = compressVideo(data);
 						extension = ".mkv";
 					} catch (Exception e) {
 						logger.error("Failed compressing video of size {} bytes. Fallback to raw h264", e, data.length);
-					} finally {
-						if (compressedBuffer != null) {
-							compressedBuffer.release();
-						}
+						buffer = Unpooled.wrappedBuffer(data);
 					}
+				} else {
+					buffer = Unpooled.wrappedBuffer(data);
 				}
 				try {
-					doKeep(key + extension, data);
+					doKeep(key + extension, buffer);
 					logger.info("Keeping of file with {} keeper took {} seconds", getID(), ChronoUnit.SECONDS.between(begin, Instant.now()));
 				} catch (Exception e) {
 					logger.error("Keeping of file with keeper {} and key {} failed. Data size lost: {} bytes", e, getID(), key, data.length);
 					cancelTimeoutTask(e);
 				} finally {
 					data = null;
+					buffer.release();
 				}
 			}
 			if (!lock) {

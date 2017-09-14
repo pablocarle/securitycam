@@ -22,7 +22,7 @@ import java.util.Properties;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.googleapis.media.MediaHttpUploader;
-import com.google.api.client.http.ByteArrayContent;
+import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.drive.Drive;
@@ -36,7 +36,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.sgrvg.security.SimpleLogger;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufInputStream;
 import net.spy.memcached.MemcachedClient;
 
 /**
@@ -166,7 +168,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 	}
 
 	@Override
-	protected void doKeep(String key, byte[] data) throws Exception {
+	protected void doKeep(String key, ByteBuf data) throws Exception {
 		if (credential == null) {
 			logger.warn("GOOGLE CREDENTIAL NOT INITIALIZED");
 			return;
@@ -181,7 +183,7 @@ public final class DriveVideoKeeper extends AbstractVideoKeeper {
 		File fileMetadata = new File();
 		fileMetadata.setName(key);
 		fileMetadata.setParents(Collections.singletonList(folder.getId()));
-		Drive.Files.Create createRequest = drive.files().create(fileMetadata , new ByteArrayContent("video/H264", data));
+		Drive.Files.Create createRequest = drive.files().create(fileMetadata , new InputStreamContent("video/H264", new ByteBufInputStream(data)));
 		createRequest
 			.getMediaHttpUploader()
 			.setProgressListener(uploader -> this.logProgress(key, uploader));

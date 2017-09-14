@@ -4,6 +4,7 @@ import java.util.Date;
 
 import com.sgrvg.security.SimpleLogger;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import net.spy.memcached.MemcachedClient;
 
@@ -20,17 +21,17 @@ public class DropboxVideoKeeper extends AbstractVideoKeeper {
 	}
 
 	@Override
-	protected void doKeep(String key, byte[] data) {
-		throw new RuntimeException("Not implemented");
-	}
-
-	@Override
 	protected void doCleanup(Date lastCleanup) {
 		throw new RuntimeException("Not implemented");
 	}
 
 	@Override
 	public String getID() {
+		throw new RuntimeException("Not implemented");
+	}
+
+	@Override
+	protected void doKeep(String key, ByteBuf buffer) throws Exception {
 		throw new RuntimeException("Not implemented");
 	}
 }

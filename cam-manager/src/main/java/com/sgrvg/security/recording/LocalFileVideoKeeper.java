@@ -9,7 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.Period;
@@ -22,7 +22,9 @@ import java.util.stream.Stream;
 import com.google.inject.Inject;
 import com.sgrvg.security.SimpleLogger;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufInputStream;
 import net.spy.memcached.MemcachedClient;
 
 /**
@@ -73,7 +75,7 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 	}
 
 	@Override
-	protected void doKeep(String key, byte[] data) throws Exception {
+	protected void doKeep(String key, ByteBuf data) throws Exception {
 		final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd");
 		final String path = "file://" + basePath + "/" + SDF.format(new Date());
 		final String filePath = path + "/" + key;
@@ -83,8 +85,8 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 			logger.info("Created directory {}", directory);
 		}
 		URI fileURI = new URI(filePath);
-		Files.write(Paths.get(fileURI), data, StandardOpenOption.CREATE_NEW);
-		logger.info("Written to file {}, {} bytes", fileURI, data.length);
+		long bytes = Files.copy(new ByteBufInputStream(data), Paths.get(fileURI), StandardCopyOption.REPLACE_EXISTING);
+		logger.info("Written to file {}, {} bytes", fileURI, bytes);
 		data = null;
 	}
 
