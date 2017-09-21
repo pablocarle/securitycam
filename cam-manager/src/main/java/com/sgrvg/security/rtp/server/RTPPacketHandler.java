@@ -176,6 +176,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 				newH264Header();
 				//Asumo que siempre va a entrar al menos 1 frame
 				video.writeBytes(frame);
+				frame.release();
 			}
 			frame = null;
 		} else {
