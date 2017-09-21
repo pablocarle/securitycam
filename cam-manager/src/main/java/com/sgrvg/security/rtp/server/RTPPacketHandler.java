@@ -158,9 +158,11 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 			packets.add(packet);
 		} else if (packet.isEnd()) {
 			packets.add(packet);
-			byte[] frame = frameBuilder.buildFrame(packets);
-			if ((maxCapacity - video.readableBytes()) >= frame.length) {
+			ByteBuf frame = byteBufAllocator.buffer();
+			frameBuilder.buildFrame(packets, frame);
+			if ((maxCapacity - video.readableBytes()) >= frame.readableBytes()) {
 				video.writeBytes(frame);
+				frame.release();
 				if (firstPacket) {
 					firstPacket = false;
 					startTimestamp = System.currentTimeMillis();
