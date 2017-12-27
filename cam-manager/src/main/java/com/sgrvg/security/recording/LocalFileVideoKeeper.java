@@ -66,7 +66,6 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 	 * @param memcachedClient Instance of memcached.
 	 * @param logger Implementation of SimpleLogger
 	 * @param byteBufAllocator Allocator used to get memory buffers for compression
-	 * @param doCompression If it keeps videos after or before compression
 	 * @param videoBitrate Bitrate used in compression in bytes/s
 	 */
 	@Inject
@@ -87,7 +86,6 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 		URI fileURI = new URI(filePath);
 		long bytes = Files.copy(new ByteBufInputStream(data), Paths.get(fileURI), StandardCopyOption.REPLACE_EXISTING);
 		logger.info("Written to file {}, {} bytes", fileURI, bytes);
-		data = null;
 	}
 
 	@Override

@@ -44,7 +44,7 @@ import net.spy.memcached.MemcachedClient;
  */
 public abstract class AbstractVideoKeeper implements VideoKeeper {
 
-	protected static final String KEY_LAST_CLEANUP = "last_cleanup";
+	private static final String KEY_LAST_CLEANUP = "last_cleanup";
 	
 	protected final SimpleLogger logger;
 	
@@ -60,7 +60,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 	private volatile boolean lock = false;
 
 	@Inject
-	public AbstractVideoKeeper(
+	AbstractVideoKeeper(
 			MemcachedClient memcachedClient,
 			SimpleLogger logger,
 			ByteBufAllocator bytebufAllocator,
@@ -106,8 +106,6 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 		String key = name + "_" + startTime + "-" + endTime;
 		try {
 			memcachedClient.set(key, 3600 * 3, data);
-			video = null;
-			data = null;
 			submitTask(key, startTimestamp, endTimestamp, doCompression);
 			logger.info("Submitted task with keeper {} and key {}", getID(), key);
 		} catch (Exception e) {
@@ -142,7 +140,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 		private String key;
 		private boolean doCompression;
 
-		public VideoKeepTask(String key, boolean doCompression) {
+		VideoKeepTask(String key, boolean doCompression) {
 			super();
 			this.key = key;
 			this.doCompression = doCompression;
@@ -165,7 +163,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 			if (data != null && data.length > 0) {
 				Instant begin = Instant.now();
 				String extension = ".264";
-				ByteBuf buffer = null;
+				ByteBuf buffer;
 				if (doCompression) {
 					try {
 						buffer = compressVideo(data);
@@ -184,13 +182,12 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 					logger.error("Keeping of file with keeper {} and key {} failed. Data size lost: {} bytes", e, getID(), key, data.length);
 					cancelTimeoutTask(e);
 				} finally {
-					data = null;
 					buffer.release();
 				}
 			}
 			if (!lock) {
 				lock = true;
-				Date lastCleanup = null;
+				Date lastCleanup;
 				try {
 					lastCleanup = (Date) memcachedClient.get(getID() + KEY_LAST_CLEANUP);
 					checkDateAndCleanup(lastCleanup);
@@ -228,7 +225,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				frameRecorder.setVideoCodec(avcodec.AV_CODEC_ID_MPEG4);
 				frameRecorder.start();
 				logger.trace("Started frame recorder");
-				Frame frame = null;
+				Frame frame;
 				while ((frame = frameGrabber.grab()) != null) {
 					frameRecorder.record(frame);
 				}
@@ -259,10 +256,6 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				} catch (IOException e) {
 					logger.error("Failed closing inputStream resource", e);
 				}
-				is = null;
-				outputStream = null;
-				frameGrabber = null;
-				frameRecorder = null;
 				logger.debug("Finished closing compression resources");
 			}
 		}
@@ -278,7 +271,7 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 					logger.info("Cleanup with {} keeper took {} seconds", getID(), ChronoUnit.SECONDS.between(begin, Instant.now()));
 				}
 			} else {
-				doCleanup(lastCleanup);
+				doCleanup(null);
 				memcachedClient.set(getID() + KEY_LAST_CLEANUP, 3600 * 24 * 2, new Date());
 				logger.info("Cleanup with {} keeper took {} seconds", getID(), ChronoUnit.SECONDS.between(begin, Instant.now()));
 			}
