@@ -294,7 +294,7 @@ public final class LoggerService implements SimpleLogger {
 			message.append(category);
 			message.append(": ");
 			message.append(this.message);
-			message.append(" ["  + threadName + "]\n");
+			message.append(" [").append(threadName).append("]\n");
 
 			if (e != null) {
 				StringWriter stringWriter = new StringWriter();
@@ -319,7 +319,7 @@ public final class LoggerService implements SimpleLogger {
 			authenticate();
 			while (!executor.isShutdown()) {
 				try {
-					LogEntry entry = null;
+					LogEntry entry;
 					if (isAuthenticated()) {
 						entry = entries.poll(10000, TimeUnit.MILLISECONDS);
 						if (entry != null) {
@@ -346,7 +346,7 @@ public final class LoggerService implements SimpleLogger {
 
 		private boolean isAuthenticated() {
 			if (!authenticated) {
-				return authenticated;
+				return false;
 			} else {
 				try {
 					Response response = sendData(new LogEntry("Check Session", "PING", new Date(), Thread.currentThread().getName(), null)).get();
@@ -355,7 +355,7 @@ public final class LoggerService implements SimpleLogger {
 				} catch (InterruptedException | ExecutionException e) {
 					authenticated = false;
 				}
-				return authenticated;
+				return false;
 			}
 		}
 

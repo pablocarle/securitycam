@@ -221,9 +221,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	}
 
 	long getMsSinceLastPacket() {
-		return getLastTimePacketReceived().map(value -> {
-			return Math.abs(ChronoUnit.MILLIS.between(value, Instant.now()));
-		}).orElse(-1L);
+		return getLastTimePacketReceived().map(value -> Math.abs(ChronoUnit.MILLIS.between(value, Instant.now()))).orElse(-1L);
 	}
 
 	@Override
