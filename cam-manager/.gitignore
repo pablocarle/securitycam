@@ -8,5 +8,7 @@ target/
 .classpath
 .settings/
 
+../TestProject/
+
 .idea/
 *.iml

@@ -107,7 +107,7 @@ public class LocalFileVideoKeeper extends AbstractVideoKeeper {
 					.filter(path -> !Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS))
 					.flatMap(file -> {
 						try {
-							return Stream.of(Boolean.valueOf(Files.deleteIfExists(file)));
+							return Stream.of(Files.deleteIfExists(file));
 						} catch (IOException e) {
 							logger.warn("Failed to delete file {}", e, file);
 							return Stream.of(false);
