@@ -1,19 +1,16 @@
 package com.sgrvg.security.recording;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-
+import com.sgrvg.security.SimpleLogger;
+import io.netty.buffer.ByteBufAllocator;
+import net.spy.memcached.MemcachedClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import com.sgrvg.security.SimpleLogger;
-import com.sgrvg.security.recording.DriveVideoKeeper;
-
-import io.netty.buffer.ByteBufAllocator;
-import net.spy.memcached.MemcachedClient;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.when;
 
 @SuppressWarnings("unused")
 public class DriveVideoKeeperTest {
@@ -32,7 +29,7 @@ public class DriveVideoKeeperTest {
 	@Before
 	public void setUp() throws Exception {
 		MockitoAnnotations.initMocks(this);
-		keeper = new DriveVideoKeeper(memcachedClient, logger, byteBufAllocator, 1 * 1000);
+		keeper = new DriveVideoKeeper(memcachedClient, logger, byteBufAllocator, 1000);
 	}
 
 	@After
