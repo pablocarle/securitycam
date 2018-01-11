@@ -1,15 +1,5 @@
 package com.sgrvg.security;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
-import java.util.stream.Collectors;
-
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.sgrvg.security.guice.ApplicationModule;
@@ -19,6 +9,16 @@ import com.sgrvg.security.rtp.server.RTPServerInitializer;
 import com.sgrvg.security.rtsp.RtspServerDefinition;
 import com.sgrvg.security.rtsp.client.RtspClientHandle;
 import com.sgrvg.security.rtsp.client.RtspClientInitializer;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
+import java.util.stream.Collectors;
 
 /**
  * Entry point
@@ -81,7 +81,7 @@ public class RtspClientMain {
 		rtpServerInstances = new ArrayList<>();
 		rtspClientInstances = new ArrayList<>();
 		
-		servers.stream().forEach(RtspClientMain::initialize);
+		servers.forEach(RtspClientMain::initialize);
 		if (rtspClientInstances == null || rtspClientInstances.isEmpty()) {
 			System.exit(1);
 		}
@@ -105,8 +105,6 @@ public class RtspClientMain {
 		logger.info("Load Servers");
 		servers = Arrays.stream(props.getProperty("server_names").split(","))
 			  .filter(x -> x != null && x.trim().length() > 0)
-		      .map(serverName -> {
-		    	  return new RtspServerDefinition(serverName, props);
-		      }).collect(Collectors.toList());
+		      .map(serverName -> new RtspServerDefinition(serverName, props)).collect(Collectors.toList());
 	}
 }
