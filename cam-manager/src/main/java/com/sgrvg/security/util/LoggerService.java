@@ -1,42 +1,25 @@
 package com.sgrvg.security.util;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.Serializable;
-import java.io.StringWriter;
-import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.inject.Inject;
+import com.sgrvg.security.SimpleLogger;
 import org.asynchttpclient.AsyncHttpClient;
 import org.asynchttpclient.ListenableFuture;
 import org.asynchttpclient.Response;
 import org.asynchttpclient.cookie.Cookie;
 
-import com.google.common.base.Strings;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.inject.Inject;
-import com.sgrvg.security.SimpleLogger;
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Tiene una cola, y en un thread aparte, va revisando cuando hay suficientes elementos de log para enviar (o cada determinado tiempo?)
- * 
+ *
  * @author pabloc
  *
  */
@@ -44,7 +27,7 @@ public final class LoggerService implements SimpleLogger {
 
 	private enum Category {
 		DEBUG, INFO, WARN, ERROR;
-		
+
 		@SuppressWarnings("unused")
 		static Optional<Category> parse(String category) {
 			if (Strings.isNullOrEmpty(category)) {
@@ -58,15 +41,15 @@ public final class LoggerService implements SimpleLogger {
 			return Optional.empty();
 		}
 	}
-	
-	private static final String SERVER_LOG_URL = "https://sgrvg-carle.rhcloud.com/service/logging";
-	private static final String SERVER_LOG_LOGIN_URL = "https://sgrvg-carle.rhcloud.com/j_spring_security_check";
+
+	private static final String SERVER_LOG_URL = "http://sgrvg-sgrvg.193b.starter-ca-central-1.openshiftapps.com/sgrvg-web-1.0.0/service/logging";
+	private static final String SERVER_LOG_LOGIN_URL = "http://sgrvg-sgrvg.193b.starter-ca-central-1.openshiftapps.com/sgrvg-web-1.0.0/j_spring_security_check";
 	private static final String USERNAME = System.getenv("LOG_USERNAME");
 	private static final String PASSWORD = System.getenv("LOG_PASSWORD");
 	private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
 
 	private static final String LOG_MARKER = "{}";
-	
+
 	private static final Gson GSON = new Gson();
 
 	private final BlockingQueue<LogEntry> entries;
@@ -162,30 +145,30 @@ public final class LoggerService implements SimpleLogger {
 	public boolean isWarnEnabled() {
 		return warnEnabled;
 	}
-	
+
 	@Override
 	public boolean isDebugEnabled() {
 		return debugEnabled;
 	}
-	
+
 	@Override
 	public boolean isTraceEnabled() {
 		return traceEnabled;
 	}
-	
+
 	@SuppressWarnings("unused")
 	private boolean isCategoryEnabled(Category category) {
 		switch (category) {
-		case DEBUG:
-			return isDebugEnabled();
-		case ERROR:
-			return isErrorEnabled();
-		case INFO:
-			return isInfoEnabled();
-		case WARN:
-			return isWarnEnabled();
-		default:
-			return true;
+			case DEBUG:
+				return isDebugEnabled();
+			case ERROR:
+				return isErrorEnabled();
+			case INFO:
+				return isInfoEnabled();
+			case WARN:
+				return isWarnEnabled();
+			default:
+				return true;
 		}
 	}
 
@@ -204,7 +187,7 @@ public final class LoggerService implements SimpleLogger {
 			entries.add(log);
 		}
 	}
-	
+
 	@Override
 	public void debug(String arg0, Object... args) {
 		if (isDebugEnabled()) {
@@ -220,7 +203,7 @@ public final class LoggerService implements SimpleLogger {
 			entries.add(log);
 		}
 	}
-	
+
 	@Override
 	public void trace(String arg0, Object... args) {
 		if (isTraceEnabled()) {
@@ -260,7 +243,7 @@ public final class LoggerService implements SimpleLogger {
 		private Throwable e;
 		private String threadName;
 
-		public LogEntry(String message, String category, Date timestamp, String threadName, Throwable e) {
+		LogEntry(String message, String category, Date timestamp, String threadName, Throwable e) {
 			super();
 			this.message = message;
 			this.category = category;
@@ -364,34 +347,32 @@ public final class LoggerService implements SimpleLogger {
 			message.addProperty("message", logEntry.getFullMessage());
 			message.addProperty("category", logEntry.getCategory());
 			return http.preparePost(SERVER_LOG_URL)
-				.addHeader("Content-Type", "application/json")
-				.setBody(GSON.toJson(message))
-				.setCookies(cookies)
-				.execute();
+					.addHeader("Content-Type", "application/json")
+					.setBody(GSON.toJson(message))
+					.setCookies(cookies)
+					.execute();
 		}
 
 		private void authenticate() {
 			try {
-				String url = SERVER_LOG_LOGIN_URL + "?j_username=" + USERNAME + "&j_password=" + PASSWORD;  
+				final String url = SERVER_LOG_LOGIN_URL + "?j_username=" + USERNAME + "&j_password=" + PASSWORD;
 				LoggerService.this.info("Trying authenticate to remote service in {}", url);
-				Response response = http.preparePost(url)
-					.addHeader("Content-Type", "application/x-www-form-urlencoded")
-					.execute()
-					.get();
-				
-				String newLocation = response.getHeader("Location");
-				if (!Strings.isNullOrEmpty(newLocation)) {
-					List<String> queryParams = URLUtil.getQueryParameterNames(new URL(newLocation));
-					if (queryParams.contains("error")) {
-						LoggerService.this.info("Failed authentication. Wrong username/password");
-						authenticated = false;
-					} else {
-						System.out.println("Successfully authenticated");
-						authenticated = true;
-						cookies = response.getCookies();
-					}
+				final Response response = http.preparePost(url)
+						.setFormParams(
+								ImmutableMap.of(
+										"j_username", ImmutableList.of(USERNAME),
+										"j_password", ImmutableList.of(PASSWORD)))
+						.addHeader("Content-Type", "application/x-www-form-urlencoded")
+						.execute()
+						.get();
+
+				final int statusCode = response.getStatusCode();
+				if (statusCode == 200) {
+					LoggerService.this.info("Successfully authenticated");
+					authenticated = true;
+					cookies = response.getCookies();
 				} else {
-					failedAuth(response, newLocation);
+					failedAuth(response, response.getResponseBody());
 				}
 			} catch (InterruptedException | ExecutionException e) {
 				LoggerService.this.error("Failed to authenticate to url: ", e);
@@ -401,8 +382,8 @@ public final class LoggerService implements SimpleLogger {
 			}
 		}
 
-		private void failedAuth(Response response, String newLocation) {
-			LoggerService.this.warn("Failed to authenticate to remote service. Returned status code: {} and location {}", response.getStatusCode(), newLocation);
+		private void failedAuth(Response response, String body) {
+			LoggerService.this.warn("Failed to authenticate to remote service. Returned status code: {} and body {}", response.getStatusCode(), body);
 			authenticated = false;
 		}
 	}
