@@ -4,7 +4,7 @@ public class ConnectionStateEvent {
 
 	private String event;
 
-	public ConnectionStateEvent(String event) {
+	ConnectionStateEvent(String event) {
 		super();
 		this.event = event;
 	}

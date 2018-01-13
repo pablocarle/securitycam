@@ -178,7 +178,6 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 				video.writeBytes(frame);
 				frame.release();
 			}
-			frame = null;
 		} else {
 			packets.add(packet);
 		}
@@ -192,7 +191,7 @@ public class RTPPacketHandler extends SimpleChannelInboundHandler<DatagramPacket
 	private void doKeepVideo(final long startTimestamp, final long endTimestamp, final ByteBuf videoBuffer) {
 		Optional<RtspServerDefinition> definition = serverConfig.getRtspEndpoint(this);
 		if (definition.isPresent()) {
-			VideoKeeper keeper = null;
+			VideoKeeper keeper;
 			switch (definition.get().getKeepType()) {
 			case CLOUD_DRIVE:
 				keeper = driveVideoKeeper;

@@ -1,6 +1,6 @@
 package com.sgrvg.security.recording;
 
-public class DriveException extends RuntimeException {
+class DriveException extends RuntimeException {
 
 	/**
 	 * 

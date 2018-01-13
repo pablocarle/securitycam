@@ -44,8 +44,7 @@ public class RTPServerDefinition {
 		if (rtspServerUri == null) {
 			if (other.rtspServerUri != null)
 				return false;
-		} else if (!rtspServerUri.equals(other.rtspServerUri))
-			return false;
+		} else return rtspServerUri.equals(other.rtspServerUri);
 		return true;
 	}
 }

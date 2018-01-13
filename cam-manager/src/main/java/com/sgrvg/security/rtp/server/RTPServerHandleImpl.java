@@ -14,7 +14,7 @@ public final class RTPServerHandleImpl implements RTPServerHandle {
 	private RtspServerDefinition rtspServerDefinition;
 	private String id;
 
-	public RTPServerHandleImpl(String id, RTPServerTask rtpTask, RtspServerDefinition server) {
+	RTPServerHandleImpl(String id, RTPServerTask rtpTask, RtspServerDefinition server) {
 		super();
 		if (Strings.isNullOrEmpty(id)) {
 			throw new NullPointerException("ID cannot be null nor empty");
@@ -68,20 +68,14 @@ public final class RTPServerHandleImpl implements RTPServerHandle {
 			return false;
 		RTPServerHandleImpl other = (RTPServerHandleImpl) obj;
 		if (id == null) {
-			if (other.id != null)
-				return false;
-		} else if (!id.equals(other.id))
-			return false;
-		return true;
+			return other.id == null;
+		} else return id.equals(other.id);
 	}
 
 	@Override
 	public boolean receiving() {
-		if (rtpTask.isFailedConnection() || !rtpTask.isSuccessfulConnection()
-				|| rtpTask.isShutdown()) {
-			return false;
-		}
-		return true;
+		return !rtpTask.isFailedConnection() && rtpTask.isSuccessfulConnection()
+				&& !rtpTask.isShutdown();
 	}
 
 	@Override
@@ -91,9 +85,7 @@ public final class RTPServerHandleImpl implements RTPServerHandle {
 
 	@Override
 	public long getTimeSinceLastPacket(ChronoUnit chronoUnit) {
-		return rtpTask.getLastReceivedPacket().map(value -> {
-			return Math.abs(chronoUnit.between(value, Instant.now()));
-		})
+		return rtpTask.getLastReceivedPacket().map(value -> Math.abs(chronoUnit.between(value, Instant.now())))
 				.orElse(-1L);
 	}
 }

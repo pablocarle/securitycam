@@ -134,7 +134,7 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 			throw new RtspHandshakeException("Invalid status for receiving a response ok status notification");
 		}
 
-		Optional<RtspHandshake> next = null;
+		Optional<RtspHandshake> next;
 		switch (lastCommand.getRtspMethod().asciiName().toString().toUpperCase()) {
 			case OPTIONS: {
 				optionsState = new OptionsState(uri, lastCommand.getState().getSequence() + 1, response);
@@ -172,17 +172,13 @@ public class RtspHandshakeOperation extends SimpleChannelInboundHandler<HttpObje
 		if (next.isPresent()) {
 			final RtspHandshake nextCommand = next.get();
 			ChannelFuture future = nextCommand.call();
-			future.addListener(new ChannelFutureListener() {
-
-				@Override
-				public void operationComplete(ChannelFuture future) throws Exception {
-					logger.info("{} operation ended with {} status", nextCommand.getRtspMethod().name(), future.isSuccess());
-					if (!future.isSuccess()) {
-						logger.error("{} operation failed", future.cause(), nextCommand.getRtspMethod().name());
-					}
-					lastCommand = nextCommand;
-				}
-			});
+			future.addListener((ChannelFutureListener) future1 -> {
+                logger.info("{} operation ended with {} status", nextCommand.getRtspMethod().name(), future1.isSuccess());
+                if (!future1.isSuccess()) {
+                    logger.error("{} operation failed", future1.cause(), nextCommand.getRtspMethod().name());
+                }
+                lastCommand = nextCommand;
+            });
 			future.sync();
 		}
 	}

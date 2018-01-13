@@ -33,9 +33,7 @@ public class RTPServer implements RTPServerInitializer {
 	private final EventLoopGroup bossLoopGroup;
 	private final ServerConfigHolder serverConfig;
 	private final RTPPacketHandler rtpPacketHandler;
-	
-	// State
-	private RTPServerTask task;
+
 	private RtspServerDefinition server;
 	
 	@Inject
@@ -53,7 +51,7 @@ public class RTPServer implements RTPServerInitializer {
 	@Override
 	public RTPServerHandle initialize(RtspServerDefinition server) {
 		this.server = server;
-		task = new RTPServerTask();
+		RTPServerTask task = new RTPServerTask();
 		Thread thread = new Thread(task);
 		thread.setName(server.getServerName() + "-RTPServer-" + thread.getName());
 		thread.start();
@@ -110,15 +108,9 @@ public class RTPServer implements RTPServerInitializer {
 						notifyFailedConnection();
 					}
 				});
-				future.channel().closeFuture().addListener(new ChannelFutureListener() {
-					
-					@Override
-					public void operationComplete(ChannelFuture future) throws Exception {
-						logger.info("RTP Server Channel closed");
-					}
-				});
+				future.channel().closeFuture().addListener((ChannelFutureListener) future1 -> logger.info("RTP Server Channel closed"));
 				logger.debug("RTPServer {} channel is open? {}, active? {}", server, future.channel().isOpen(), future.channel().isActive());
-				long time = -1L;
+				long time;
 				while (future.channel().isOpen() || future.channel().isActive()) {
 					if (logger.isDebugEnabled()) {
 						//logger.debug("Check connection status of RTP Server {}", server);
