@@ -9,6 +9,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
+import java.text.MessageFormat;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -27,6 +28,8 @@ import com.google.api.services.drive.model.Permission;
 import com.google.common.base.Strings;
 
 public class DriveUploaderTestMain {
+
+	private static final String MAIN_FOLDER_ID = "0B4ZhPs6AV4VJLTgxM3B3QTBrY2s";
 
 	private GoogleCredential credential;
 	{
@@ -81,22 +84,19 @@ public class DriveUploaderTestMain {
 	
 	private void doIt() {
 		//Creo carpeta compartida
-		File fileMetadata = new File();
-		fileMetadata.setName("Test Folder 2");
-		fileMetadata.setMimeType("application/vnd.google-apps.folder");
 		
 		try {
 			
 			Drive.Files.List listRequest = drive.files().list();
-			FileList fileList = listRequest.setQ("mimeType='application/vnd.google-apps.folder'")
+			FileList fileList = listRequest.setQ("'" + MAIN_FOLDER_ID + "' in parents")
 					.setFields("nextPageToken, files(id, name)")
 					.setSpaces("drive")
 					.execute();
 			
 			if (!fileList.isEmpty()) {
-				System.out.println("Encontre " + fileList.size() + " carpetas. Nombre: " + fileList.getFiles().get(0).getName());
-				fileList.getFiles().stream()
-					.forEach(file -> {
+				System.out.println("Encontre " + fileList.size() + " carpetas.");
+				fileList.getFiles()
+					/*.forEach(file -> {
 						try {
 							drive.permissions()
 							.create(
@@ -113,6 +113,9 @@ public class DriveUploaderTestMain {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
+					}*/
+					.forEach(file -> {
+						System.out.println(MessageFormat.format("file: {1}", file.getName()));
 					});
 			}
 		} catch (IOException e) {
