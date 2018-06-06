@@ -2,3 +2,5 @@ mvn clean package -Djavacpp.platform=linux-armhf
 
 Usar version 1.4 de memcached
 -I 15M
+
+git push https://pablocarle:pass@github.com/pablocarle/securitycam.git
