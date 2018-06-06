@@ -105,9 +105,18 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 		String endTime = sdf.format(new Date(endTimestamp));
 		String key = name + "_" + startTime + "-" + endTime;
 		try {
-			memcachedClient.set(key, 3600 * 3, data);
-			submitTask(key, startTimestamp, endTimestamp, doCompression);
-			logger.info("Submitted task with keeper {} and key {}", getID(), key);
+			memcachedClient.set(key, 3600 * 3, data).addListener(op -> {
+				if (op.isDone() && op.getStatus().isSuccess()) {
+					submitTask(key, startTimestamp, endTimestamp, doCompression);
+					logger.info("Submitted task with keeper {} and key {}", getID(), key);
+				} else if (op.isDone()) {
+					logger.warn("Memcached with fail state. Status: {}, Message: {}", op.getStatus().getStatusCode(), op.getStatus().getMessage());
+				} else if (op.isCancelled()) {
+					logger.info("Future of memcached is cancelled");
+				} else {
+					logger.debug("Not done yet");
+				}
+			});
 		} catch (Exception e) {
 			logger.error("Failed to keep video. {} bytes data lost", e, video.readableBytes());
 		}
@@ -231,6 +240,9 @@ public abstract class AbstractVideoKeeper implements VideoKeeper {
 				}
 				logger.info("compressed {} bytes to {} bytes", data.length, buffer.readableBytes());
 				return buffer;
+			} catch (Error error) {
+				logger.error("Failed to compress", error);
+				throw error;
 			} finally {
 				if (frameGrabber != null) {
 					try {
